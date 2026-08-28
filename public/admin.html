@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿C:\Users\User\bingo-game\public<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -151,16 +151,21 @@
             <label>遊戲格數</label>
 
             <select id="size">
-                <option value="25">25 格</option>
-                <option value="35">35 格</option>
-                <option value="40">40 格</option>
-                <option value="45">45 格</option>
+                <option value="25">5×5</option>
+<option value="36">6×6</option>
+<option value="49">7×7</option>
+<option value="64">8×8</option>
             </select>
 
           <button class="create" onclick="createRoom()">
     🏠 建立遊戲房間
 </button>
-
+<button type="button" onclick="copyPlayerLink()">
+    🔗 複製玩家網址
+</button>
+<div id="startCountdown" style="margin-top:12px; font-size:22px; font-weight:bold;">
+    等待分享玩家網址
+</div>
         <div id="roomStatus">房間狀態：尚未建立</div>
 <div id="sizeStatus">遊戲格數：尚未設定</div>
 <div id="playerStatus">目前玩家：0 人</div>
@@ -188,22 +193,24 @@
             <button class="draw" onclick="drawNumber()">
                 🎱 開下一個號碼
             </button>
-<select id="autoSeconds">
-    <option value="2">2 秒</option>
-    <option value="3">3 秒</option>
-    <option value="5">5 秒</option>
-</select>
-<select id="autoPauseSeconds">
-    <option value="10">10 秒</option>
-    <option value="20">20 秒</option>
-    <option value="30">30 秒</option>
-    <option value="40">40 秒</option>
-    <option value="50">50 秒</option>
-    <option value="60">60 秒</option>
-    <option value="70">70 秒</option>
-    <option value="80">80 秒</option>
-    <option value="90">90 秒</option>
-</select>
+<div>
+    <b>🎱 開獎間隔：</b>
+    <button type="button" onclick="setAutoSeconds(2)">2秒</button>
+    <button type="button" onclick="setAutoSeconds(3)">3秒</button>
+    <button type="button" onclick="setAutoSeconds(5)">5秒</button>
+    <button type="button" onclick="setAutoSeconds(10)">10秒</button>
+</div>
+
+<input type="hidden" id="autoSeconds" value="3">
+<div style="margin-top:15px;">
+    <div>⏱️ 遊戲時間</div>
+
+    <button onclick="setGameSeconds(30)">30秒</button>
+    <button onclick="setGameSeconds(60)">60秒</button>
+    <button onclick="setGameSeconds(90)">90秒</button>
+    <button onclick="setGameSeconds(120)">120秒</button>
+</div>
+<input type="hidden" id="autoPauseSeconds" value="60">
             <button class="auto" onclick="startAutoDraw()">
                 ⚡ 自動開獎
             </button>
@@ -215,7 +222,9 @@
             <button class="reset">
                 ♻️ 重置遊戲
             </button>
-
+<button type="button" onclick="copyRanking()">
+    📋 複製排名
+</button>
         </div>
 
         <button
@@ -354,6 +363,14 @@ async function updatePlayerCount() {
 }
 let autoDrawTimer = null;
 let autoPauseTimer = null;
+function setAutoSeconds(seconds) {
+function setGameSeconds(seconds) {
+    document.getElementById("autoPauseSeconds").value = seconds;
+    alert("✅ 遊戲時間已設定為 " + seconds + " 秒");
+}
+    document.getElementById("autoSeconds").value = seconds;
+    alert("✅ 開獎間隔已設定為 " + seconds + " 秒");
+}
 function startAutoDraw() {
     const seconds = Number(
         document.getElementById("autoSeconds").value
@@ -401,6 +418,94 @@ function pauseAutoDraw() {
     }
 
     alert("⏸ 自動開獎已暫停");
+}
+function copyPlayerLink() {
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!roomId) {
+        alert("⚠️ 請先輸入房間號碼並建立房間");
+        return;
+    }
+
+    const playerUrl = window.location.origin + "/?room=" + encodeURIComponent(roomId);
+
+    navigator.clipboard.writeText(playerUrl)
+       .then(() => {
+    alert("✅ 玩家網址已複製！\n\n" + playerUrl);
+    start90SecondCountdown();
+})
+        .catch(() => {
+            alert("❌ 網址複製失敗");
+        });
+}
+async function copyRanking() {
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!roomId) {
+        alert("⚠️ 請先輸入房間號碼");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/room/" + roomId);
+        const data = await response.json();
+
+        if (!data.success) {
+            alert("❌ 讀取排名失敗");
+            return;
+        }
+
+        const players = Object.values(data.room.players || {});
+
+        players.sort((a, b) => {
+    if ((b.bingoLines || 0) !== (a.bingoLines || 0)) {
+        return (b.bingoLines || 0) - (a.bingoLines || 0);
+    }
+
+    return (b.hitCount || 0) - (a.hitCount || 0);
+});
+
+        let text = "🏆 賓果排名\n\n";
+
+        players.forEach((player, index) => {
+            text += (index + 1) + ". " + player.name +
+        "｜已點 " + (player.hitCount || 0) + " 格" +
+        "｜賓果 " + (player.bingoLines || 0) + " 線\n";
+        });
+
+        await navigator.clipboard.writeText(text);
+        alert("✅ 排名已複製！");
+    } catch (error) {
+        alert("❌ 複製排名失敗");
+    }
+}
+let startCountdownTimer = null;
+
+function start90SecondCountdown() {
+    let secondsLeft = 90;
+
+    const countdown = document.getElementById("startCountdown");
+
+    if (startCountdownTimer) {
+        clearInterval(startCountdownTimer);
+    }
+
+    countdown.innerText = "遊戲將在 " + secondsLeft + " 秒後開始";
+
+    startCountdownTimer = setInterval(() => {
+        secondsLeft--;
+
+        countdown.innerText = "遊戲將在 " + secondsLeft + " 秒後開始";
+
+        if (secondsLeft <= 0) {
+            clearInterval(startCountdownTimer);
+            startCountdownTimer = null;
+
+            countdown.innerText = "▶ 遊戲開始！";
+
+            startGame();
+        }
+    }, 1000);
 }
 setInterval(updatePlayerCount, 1000); </script>
 </html>
