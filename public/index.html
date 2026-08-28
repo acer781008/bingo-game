@@ -109,11 +109,7 @@
         🚀 加入遊戲
     </button>
 
-    <button class="admin-btn"
-        onclick="location.href='admin.html'">
-        👑 進入主控室
-    </button>
-
+  
     <div class="note">
         遊戲格數由主控室統一設定
     </div>
@@ -124,7 +120,12 @@
 
 <script>
 const socket = io();
+const params = new URLSearchParams(window.location.search);
+const roomFromUrl = params.get("room");
 
+if (roomFromUrl) {
+    document.getElementById("room").value = roomFromUrl;
+}
 function joinGame() {
 
     const name = document.getElementById("name").value.trim();
