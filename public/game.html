@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>數字賓果賓果｜遊戲室</title>
+<title>數字賓果｜遊戲室</title>
 
 <style>
 * {
@@ -180,7 +180,7 @@ body {
 
     <div class="header">
 
-        <h1>🎯 數字賓果賓果</h1>
+        <h1>🎯 數字賓果</h1>
 
         <div class="info">
 
@@ -203,31 +203,33 @@ body {
 
     </div>
 
-    <div class="game-panel">
+<div class="game-panel">
 
-        <div class="status">
+    <div class="status">
 
-            <div class="status-title">
-                🎱 目前開獎號碼
-            </div>
-
-            <div class="current-number" id="currentNumber">
-                -
-            </div>
-
+        <div id="playerCountdown" style="font-size:22px; font-weight:bold; margin-bottom:15px;">
+            等待遊戲開始
         </div>
 
-        <div class="board" id="board"></div>
-
-        <div class="bingo-message" id="bingoMessage">
-            🎉 BINGO！
+        <div class="status-title">
+            🎱 目前開獎號碼
         </div>
 
-       <button onclick="copyBoard()" class="copy-board-btn">
-    📋 複製賓果盤
-</button>
+        <div class="current-number" id="currentNumber">
+            -
+        </div>
 
     </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="bingo-message" id="bingoMessage">
+        🎉 BINGO！
+    </div>
+
+    <button onclick="copyBoard()" class="copy-board-btn">
+        📋 複製賓果盤
+    </button>
 
 </div>
 
@@ -251,7 +253,6 @@ document.getElementById("gameSize").innerText = gameSize + " 格";
 const board = document.getElementById("board");
 
 let playerNumbers = [];
-let drawnNumbers = [];
 let currentDrawnNumber = null;
 
 function createBoard() {
@@ -284,10 +285,15 @@ cell.onclick = () => {
 if (cell.classList.contains("hit")) {
     return;
 }
-    cell.classList.add("hit");
-const stats = getGameStats();
+        cell.classList.add("hit");
 
-socket.emit("addScore", stats);
+    const stats = getGameStats();
+
+    if (stats.bingoLines > 0) {
+        document.getElementById("bingoMessage").style.display = "block";
+    }
+
+    socket.emit("addScore", stats);
 };
 
         board.appendChild(cell);
@@ -378,44 +384,6 @@ function shuffle(array) {
 
 }
 
-function markNumber(number) {
-
-    const cells = document.querySelectorAll(".cell");
-
-    cells.forEach(cell => {
-
-        if (Number(cell.dataset.number) === Number(number)) {
-            cell.classList.add("hit");
-        }
-
-    });
-
-}
-
-function updateHistory() {
-
-    const history = document.getElementById("history");
-
-    history.innerHTML = "";
-
-    if (drawnNumbers.length === 0) {
-        history.innerText = "尚未開獎";
-        return;
-    }
-
-    drawnNumbers.forEach(number => {
-
-        const item = document.createElement("div");
-
-        item.className = "history-number";
-        item.innerText = number;
-
-        history.appendChild(item);
-
-    });
-
-}
-
 const socket = io();
 
 socket.emit("joinRoom", {
@@ -434,11 +402,15 @@ socket.on("joinError", message => {
 socket.on("joinSuccess", data => {
 
     if (Number(data.size) !== gameSize) {
-
         localStorage.setItem("gameSize", data.size);
-
         location.reload();
+        return;
+    }
 
+    if (data.scheduledStartAt) {
+        startPlayerCountdown(data.scheduledStartAt);
+    } else {
+        document.getElementById("playerCountdown").innerText = "等待管理員設定開始時間";
     }
 
 });
@@ -477,7 +449,64 @@ currentDrawnNumber = number;
     document.getElementById("currentNumber").innerText = number;
 
 });
+let playerStartCountdownTimer = null;
 
+function startPlayerCountdown(startTimeValue) {
+    const countdown = document.getElementById("playerCountdown");
+    const startTime = new Date(Number(startTimeValue));
+
+    if (playerStartCountdownTimer) {
+        clearInterval(playerStartCountdownTimer);
+    }
+
+    function updatePlayerCountdown() {
+        const remaining = startTime.getTime() - Date.now();
+
+        if (remaining <= 0) {
+            if (playerStartCountdownTimer) {
+                clearInterval(playerStartCountdownTimer);
+                playerStartCountdownTimer = null;
+            }
+
+            countdown.innerText = "▶ 遊戲開始！";
+            return;
+        }
+
+        const totalSeconds = Math.ceil(remaining / 1000);
+
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        countdown.innerText =
+            "🕐 遊戲開始時間：" +
+            startTime.toLocaleString("zh-TW") +
+            "\n⏳ 剩餘：" +
+            days + "天 " +
+            hours + "時 " +
+            minutes + "分 " +
+            seconds + "秒";
+    }
+
+    updatePlayerCountdown();
+
+    playerStartCountdownTimer =
+        setInterval(updatePlayerCountdown, 1000);
+}
+
+socket.on("gameScheduled", data => {
+    startPlayerCountdown(data.startTime);
+});
+
+socket.on("gameStarted", () => {
+    const countdown = document.getElementById("playerCountdown");
+    countdown.innerText = "▶ 遊戲開始！";
+});
+socket.on("gameEnded", () => {
+    currentDrawnNumber = null;
+    alert("🏁 遊戲結束！");
+});
 createBoard();
 function copyBoard() {
     const side = Math.sqrt(gameSize);
@@ -503,7 +532,7 @@ function copyBoard() {
     <div id="playerList"></div>
 </div>
 
-</body>
-</html>
+</div>
+
 </body>
 </html>
