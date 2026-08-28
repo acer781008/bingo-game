@@ -126,7 +126,7 @@ app.post("/api/admin/create-room", (req, res) => {
     const roomId = String(req.body.roomId || "").trim();
     const size = Number(req.body.size);
 
-    const allowedSizes = [25, 35, 40, 45, 50];
+    const allowedSizes = [25, 36, 49, 64];
 
     if (!roomId) {
         return res.status(400).json({
@@ -304,7 +304,10 @@ io.on("connection", (socket) => {
             socket.emit("joinError", "請輸入玩家名稱");
             return;
         }
-
+if (room.started) {
+    socket.emit("joinError", "遊戲已開始，無法再加入");
+    return;
+}
         socket.join(roomId);
 for (const id in room.players) {
     if (room.players[id].name === name) {
