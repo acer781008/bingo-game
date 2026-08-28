@@ -77,7 +77,7 @@ body {
 
 .board {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(var(--cols), 1fr);
     gap: 8px;
     max-width: 600px;
     margin: auto;
@@ -223,17 +223,9 @@ body {
             🎉 BINGO！
         </div>
 
-        <div class="history-box">
-
-            <div class="history-title">
-                📋 已開獎號碼
-            </div>
-
-            <div class="history" id="history">
-                尚未開獎
-            </div>
-
-        </div>
+       <button onclick="copyBoard()" class="copy-board-btn">
+    📋 複製賓果盤
+</button>
 
     </div>
 
@@ -263,6 +255,8 @@ let drawnNumbers = [];
 let currentDrawnNumber = null;
 
 function createBoard() {
+const cols = Math.sqrt(gameSize);
+board.style.setProperty("--cols", cols);
 
     board.innerHTML = "";
 
@@ -302,47 +296,24 @@ socket.emit("addScore", stats);
 }
 function getGameStats() {
     const cells = Array.from(document.querySelectorAll(".cell"));
+    const side = Math.sqrt(gameSize);
 
-    const cols = gameSize / 5;
-    const rows = 5;
-
-const marked = cells.map(cell =>
-    cell.classList.contains("hit")
-);
+    const marked = cells.map(cell =>
+        cell.classList.contains("hit")
+    );
 
     const hitCount = marked.filter(Boolean).length;
-
     let bingoLines = 0;
 
     function isHit(row, col) {
-        if (row < 0 || row >= rows || col < 0 || col >= cols) {
-            return false;
-        }
-
-        return marked[row * cols + col];
+        return marked[row * side + col];
     }
 
-    // 橫向：連續 5 格
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col <= cols - 5; col++) {
-            let complete = true;
-
-            for (let i = 0; i < 5; i++) {
-                if (!isHit(row, col + i)) {
-                    complete = false;
-                    break;
-                }
-            }
-
-            if (complete) bingoLines++;
-        }
-    }
-
-    // 直向：5 格
-    for (let col = 0; col < cols; col++) {
+    // 橫向
+    for (let row = 0; row < side; row++) {
         let complete = true;
 
-        for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < side; col++) {
             if (!isHit(row, col)) {
                 complete = false;
                 break;
@@ -352,12 +323,12 @@ const marked = cells.map(cell =>
         if (complete) bingoLines++;
     }
 
-    // 左上 → 右下斜線
-    for (let col = 0; col <= cols - 5; col++) {
+    // 直向
+    for (let col = 0; col < side; col++) {
         let complete = true;
 
-        for (let i = 0; i < 5; i++) {
-            if (!isHit(i, col + i)) {
+        for (let row = 0; row < side; row++) {
+            if (!isHit(row, col)) {
                 complete = false;
                 break;
             }
@@ -366,19 +337,29 @@ const marked = cells.map(cell =>
         if (complete) bingoLines++;
     }
 
-    // 右上 → 左下斜線
-    for (let col = 4; col < cols; col++) {
-        let complete = true;
+    // 左上到右下
+    let diagonal1 = true;
 
-        for (let i = 0; i < 5; i++) {
-            if (!isHit(i, col - i)) {
-                complete = false;
-                break;
-            }
+    for (let i = 0; i < side; i++) {
+        if (!isHit(i, i)) {
+            diagonal1 = false;
+            break;
         }
-
-        if (complete) bingoLines++;
     }
+
+    if (diagonal1) bingoLines++;
+
+    // 右上到左下
+    let diagonal2 = true;
+
+    for (let i = 0; i < side; i++) {
+        if (!isHit(i, side - 1 - i)) {
+            diagonal2 = false;
+            break;
+        }
+    }
+
+    if (diagonal2) bingoLines++;
 
     return {
         hitCount: hitCount,
@@ -498,8 +479,22 @@ currentDrawnNumber = number;
 });
 
 createBoard();
+function copyBoard() {
+    const side = Math.sqrt(gameSize);
+    let text = "🎯 我的賓果盤\n";
 
-</script>
+    for (let i = 0; i < playerNumbers.length; i += side) {
+        text += playerNumbers.slice(i, i + side).join("　") + "\n";
+    }
+
+    navigator.clipboard.writeText(text)
+        .then(() => {
+            alert("✅ 賓果盤已複製！");
+        })
+        .catch(() => {
+            alert("❌ 複製失敗");
+        });
+}
 </script>
 
 <!-- 已加入玩家 -->
