@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數字賓果賓果</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #241052, #5421a8, #1769c2);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box {
+            width: 90%;
+            max-width: 500px;
+            background: rgba(20, 15, 55, 0.92);
+            padding: 35px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.35);
+        }
+
+        h1 {
+            font-size: 38px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ddd;
+            margin-bottom: 30px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .join-btn {
+            background: #ffd43b;
+            color: #25134f;
+        }
+
+        .admin-btn {
+            background: #7c4dff;
+            color: white;
+        }
+
+        button:hover {
+            transform: scale(1.02);
+        }
+
+        .note {
+            margin-top: 22px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h1>🎯 數字賓果賓果</h1>
+
+    <div class="subtitle">
+        多人即時連線 Bingo
+    </div>
+
+    <input
+        id="name"
+        type="text"
+        placeholder="請輸入玩家名稱"
+    >
+
+    <input
+        id="room"
+        type="text"
+        placeholder="請輸入房間號碼"
+    >
+
+   <button class="join-btn" onclick="joinGame()">
+        🚀 加入遊戲
+    </button>
+
+    <button class="admin-btn"
+        onclick="location.href='admin.html'">
+        👑 進入主控室
+    </button>
+
+    <div class="note">
+        遊戲格數由主控室統一設定
+    </div>
+
+</div>
+
+</body><script src="/socket.io/socket.io.js"></script>
+
+<script>
+const socket = io();
+
+function joinGame() {
+
+    const name = document.getElementById("name").value.trim();
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!name) {
+        alert("請輸入玩家名稱");
+        return;
+    }
+
+    if (!roomId) {
+        alert("請輸入房間號碼");
+        return;
+    }
+
+    socket.emit("joinRoom", {
+        roomId: roomId,
+        name: name
+    });
+}
+
+socket.on("joinError", (message) => {
+    alert("❌ " + message);
+});
+
+socket.on("joinSuccess", (data) => {
+
+    localStorage.setItem("playerName",
+        document.getElementById("name").value.trim());
+
+    localStorage.setItem("roomId", data.roomId);
+
+    localStorage.setItem("gameSize", data.size);
+
+    alert(
+        "✅ 加入成功！\n" +
+        "房間：" + data.roomId + "\n" +
+        "遊戲格數：" + data.size + " 格"
+    );window.location.href = "/game.html";
+});
+</script>
+</html>

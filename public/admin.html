@@ -1,0 +1,406 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數字賓果主控室</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #1f144d, #4c1d95, #0f5fa8);
+            color: white;
+            padding: 25px;
+        }
+
+        .wrap {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .panel {
+            background: rgba(18, 13, 55, 0.94);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.35);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 17px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .create {
+            background: #ffd43b;
+            color: #241052;
+        }
+
+        .start {
+            background: #30d158;
+            color: white;
+        }
+
+        .draw {
+            background: #0a84ff;
+            color: white;
+        }
+
+        .auto {
+            background: #bf5af2;
+            color: white;
+        }
+
+        .pause {
+            background: #ff9f0a;
+            color: white;
+        }
+
+        .reset {
+            background: #ff453a;
+            color: white;
+        }
+
+        .back {
+            background: #666;
+            color: white;
+        }
+
+        .status {
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .number {
+            font-size: 60px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            color: #ffd43b;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <div class="panel">
+
+        <h1>👑 數字賓果主控室</h1>
+
+        <div class="subtitle">
+            建立房間・設定格數・控制開獎
+        </div>
+
+        <div class="section">
+
+            <label>房間號碼</label>
+
+            <input
+                id="room"
+                type="text"
+                placeholder="例如：8888"
+            >
+
+            <label>遊戲格數</label>
+
+            <select id="size">
+                <option value="25">25 格</option>
+                <option value="35">35 格</option>
+                <option value="40">40 格</option>
+                <option value="45">45 格</option>
+            </select>
+
+          <button class="create" onclick="createRoom()">
+    🏠 建立遊戲房間
+</button>
+
+        <div id="roomStatus">房間狀態：尚未建立</div>
+<div id="sizeStatus">遊戲格數：尚未設定</div>
+<div id="playerStatus">目前玩家：0 人</div>
+
+        
+
+        </div>
+
+        <div class="section">
+
+            <h2>🎱 目前開獎號碼</h2>
+
+            <div class="number">
+                -
+            </div>
+
+        </div>
+
+        <div class="section">
+
+            <button class="start" onclick="startGame()">
+                ▶️ 開始遊戲
+            </button>
+
+            <button class="draw" onclick="drawNumber()">
+                🎱 開下一個號碼
+            </button>
+<select id="autoSeconds">
+    <option value="2">2 秒</option>
+    <option value="3">3 秒</option>
+    <option value="5">5 秒</option>
+</select>
+<select id="autoPauseSeconds">
+    <option value="10">10 秒</option>
+    <option value="20">20 秒</option>
+    <option value="30">30 秒</option>
+    <option value="40">40 秒</option>
+    <option value="50">50 秒</option>
+    <option value="60">60 秒</option>
+    <option value="70">70 秒</option>
+    <option value="80">80 秒</option>
+    <option value="90">90 秒</option>
+</select>
+            <button class="auto" onclick="startAutoDraw()">
+                ⚡ 自動開獎
+            </button>
+
+            <button class="pause" onclick="pauseAutoDraw()">
+                ⏸️ 暫停
+            </button>
+
+            <button class="reset">
+                ♻️ 重置遊戲
+            </button>
+
+        </div>
+
+        <button
+            class="back"
+            onclick="location.href='index.html'">
+            ⬅️ 回玩家首頁
+        </button>
+
+    </div>
+
+</div>
+
+</body><script>
+async function createRoom() {
+    const roomId = document.getElementById("room").value.trim();
+    const size = Number(document.getElementById("size").value);
+
+    if (!roomId) {
+        alert("請輸入房間號碼");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/admin/create-room", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                roomId: roomId,
+                size: size
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            alert("❌ " + data.message);
+            return;
+        }
+
+        document.getElementById("roomStatus").innerText =
+            "房間狀態：✅ 已建立 " + data.room.roomId;
+
+        document.getElementById("sizeStatus").innerText =
+            "遊戲格數：" + data.room.size + " 格";
+
+        document.getElementById("playerStatus").innerText =
+            "目前玩家：0 人";
+
+        alert("✅ 房間建立成功！");
+    } catch (error) {
+        alert("❌ 無法連接伺服器");
+    }
+}async function startGame() {
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!roomId) {
+        alert("請輸入房間號碼");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/admin/start-game", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                roomId: roomId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            alert("❌ " + data.message);
+            return;
+        }
+
+        alert("▶ 遊戲開始！");
+    } catch (error) {
+        alert("❌ 無法連接伺服器");
+    }
+} async function drawNumber() {
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!roomId) {
+        alert("請輸入房間號碼");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/admin/draw-number", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                roomId: roomId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            alert("❌ " + data.message);
+            return;
+        }
+
+        document.querySelector(".number").innerText = data.number;
+
+    } catch (error) {
+        alert("❌ 無法連接伺服器");
+    }
+}
+async function updatePlayerCount() {
+    const roomId = document.getElementById("room").value.trim();
+
+    if (!roomId) return;
+
+    try {
+        const response = await fetch("/api/room/" + roomId);
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById("playerStatus").innerText =
+                "目前玩家：" + data.room.playerCount + " 人";
+        }
+    } catch (error) {
+        console.log("讀取玩家人數失敗");
+    }
+}
+let autoDrawTimer = null;
+let autoPauseTimer = null;
+function startAutoDraw() {
+    const seconds = Number(
+        document.getElementById("autoSeconds").value
+    );
+
+    const pauseSeconds = Number(
+        document.getElementById("autoPauseSeconds").value
+    );
+
+    if (autoDrawTimer) {
+        clearInterval(autoDrawTimer);
+    }
+
+    if (autoPauseTimer) {
+        clearTimeout(autoPauseTimer);
+    }
+
+    drawNumber();
+
+    autoDrawTimer = setInterval(() => {
+        drawNumber();
+    }, seconds * 1000);
+
+    autoPauseTimer = setTimeout(() => {
+        if (autoDrawTimer) {
+            clearInterval(autoDrawTimer);
+            autoDrawTimer = null;
+        }
+
+        autoPauseTimer = null;
+        alert("⏸ 已到設定時間，自動開獎已暫停");
+    }, pauseSeconds * 1000);
+}
+
+
+function pauseAutoDraw() {
+    if (autoDrawTimer) {
+        clearInterval(autoDrawTimer);
+        autoDrawTimer = null;
+    }
+
+    if (autoPauseTimer) {
+        clearTimeout(autoPauseTimer);
+        autoPauseTimer = null;
+    }
+
+    alert("⏸ 自動開獎已暫停");
+}
+setInterval(updatePlayerCount, 1000); </script>
+</html>

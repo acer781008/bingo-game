@@ -1,0 +1,514 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>數字賓果賓果｜遊戲室</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Microsoft JhengHei", Arial, sans-serif;
+    background: linear-gradient(135deg, #241052, #54248a);
+    color: white;
+    padding: 20px;
+}
+
+.wrap {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+}
+
+.header {
+    background: rgba(20, 15, 55, 0.94);
+    border-radius: 22px;
+    padding: 20px;
+    margin-bottom: 18px;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0 0 12px;
+    font-size: 32px;
+}
+
+.info {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.info-box {
+    background: rgba(255,255,255,0.10);
+    padding: 10px 18px;
+    border-radius: 12px;
+}
+
+.game-panel {
+    background: rgba(20, 15, 55, 0.94);
+    border-radius: 22px;
+    padding: 20px;
+}
+
+.status {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.status-title {
+    color: #ddd;
+    font-size: 15px;
+}
+
+.current-number {
+    font-size: 55px;
+    font-weight: bold;
+    color: #ffd43b;
+    min-height: 70px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-width: 600px;
+    margin: auto;
+}
+
+.cell {
+    aspect-ratio: 1 / 1;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    color: #251052;
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cell.hit {
+    background: #ffd43b;
+    color: #222;
+    transform: scale(0.95);
+}
+
+.history-box {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 15px;
+    padding: 15px;
+}
+
+.history-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.history {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.history-number {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: white;
+    color: #251052;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+.bingo-message {
+    display: none;
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 15px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    background: #ffd43b;
+    color: #222;
+}
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .header h1 {
+        font-size: 25px;
+    }
+
+    .game-panel {
+        padding: 12px;
+    }
+
+    .board {
+        gap: 5px;
+    }
+
+    .cell {
+        border-radius: 8px;
+        font-size: 17px;
+    }
+
+    .current-number {
+        font-size: 45px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <div class="header">
+
+        <h1>🎯 數字賓果賓果</h1>
+
+        <div class="info">
+
+            <div class="info-box">
+                👤 玩家：
+                <span id="playerName">---</span>
+            </div>
+
+            <div class="info-box">
+                🏠 房間：
+                <span id="roomId">---</span>
+            </div>
+
+            <div class="info-box">
+                🎲 格數：
+                <span id="gameSize">---</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="game-panel">
+
+        <div class="status">
+
+            <div class="status-title">
+                🎱 目前開獎號碼
+            </div>
+
+            <div class="current-number" id="currentNumber">
+                -
+            </div>
+
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="bingo-message" id="bingoMessage">
+            🎉 BINGO！
+        </div>
+
+        <div class="history-box">
+
+            <div class="history-title">
+                📋 已開獎號碼
+            </div>
+
+            <div class="history" id="history">
+                尚未開獎
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const playerName = localStorage.getItem("playerName");
+const roomId = localStorage.getItem("roomId");
+const gameSize = Number(localStorage.getItem("gameSize"));
+
+if (!playerName || !roomId || !gameSize) {
+    alert("尚未加入遊戲房間");
+    window.location.href = "/";
+}
+
+document.getElementById("playerName").innerText = playerName;
+document.getElementById("roomId").innerText = roomId;
+document.getElementById("gameSize").innerText = gameSize + " 格";
+
+const board = document.getElementById("board");
+
+let playerNumbers = [];
+let drawnNumbers = [];
+let currentDrawnNumber = null;
+
+function createBoard() {
+
+    board.innerHTML = "";
+
+    playerNumbers = [];
+
+    for (let i = 1; i <= gameSize; i++) {
+        playerNumbers.push(i);
+    }
+
+    shuffle(playerNumbers);
+
+    playerNumbers.forEach(number => {
+
+        const cell = document.createElement("div");
+
+        cell.className = "cell";
+        cell.innerText = number;
+        cell.dataset.number = number;
+cell.onclick = () => {
+    const cellNumber = Number(cell.dataset.number);
+
+    if (cellNumber !== currentDrawnNumber) {
+        return;
+    }
+if (cell.classList.contains("hit")) {
+    return;
+}
+    cell.classList.add("hit");
+const stats = getGameStats();
+
+socket.emit("addScore", stats);
+};
+
+        board.appendChild(cell);
+
+    });
+}
+function getGameStats() {
+    const cells = Array.from(document.querySelectorAll(".cell"));
+
+    const cols = gameSize / 5;
+    const rows = 5;
+
+const marked = cells.map(cell =>
+    cell.classList.contains("hit")
+);
+
+    const hitCount = marked.filter(Boolean).length;
+
+    let bingoLines = 0;
+
+    function isHit(row, col) {
+        if (row < 0 || row >= rows || col < 0 || col >= cols) {
+            return false;
+        }
+
+        return marked[row * cols + col];
+    }
+
+    // 橫向：連續 5 格
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col <= cols - 5; col++) {
+            let complete = true;
+
+            for (let i = 0; i < 5; i++) {
+                if (!isHit(row, col + i)) {
+                    complete = false;
+                    break;
+                }
+            }
+
+            if (complete) bingoLines++;
+        }
+    }
+
+    // 直向：5 格
+    for (let col = 0; col < cols; col++) {
+        let complete = true;
+
+        for (let row = 0; row < 5; row++) {
+            if (!isHit(row, col)) {
+                complete = false;
+                break;
+            }
+        }
+
+        if (complete) bingoLines++;
+    }
+
+    // 左上 → 右下斜線
+    for (let col = 0; col <= cols - 5; col++) {
+        let complete = true;
+
+        for (let i = 0; i < 5; i++) {
+            if (!isHit(i, col + i)) {
+                complete = false;
+                break;
+            }
+        }
+
+        if (complete) bingoLines++;
+    }
+
+    // 右上 → 左下斜線
+    for (let col = 4; col < cols; col++) {
+        let complete = true;
+
+        for (let i = 0; i < 5; i++) {
+            if (!isHit(i, col - i)) {
+                complete = false;
+                break;
+            }
+        }
+
+        if (complete) bingoLines++;
+    }
+
+    return {
+        hitCount: hitCount,
+        bingoLines: bingoLines
+    };
+}
+function shuffle(array) {
+
+    for (let i = array.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] = [array[j], array[i]];
+
+    }
+
+}
+
+function markNumber(number) {
+
+    const cells = document.querySelectorAll(".cell");
+
+    cells.forEach(cell => {
+
+        if (Number(cell.dataset.number) === Number(number)) {
+            cell.classList.add("hit");
+        }
+
+    });
+
+}
+
+function updateHistory() {
+
+    const history = document.getElementById("history");
+
+    history.innerHTML = "";
+
+    if (drawnNumbers.length === 0) {
+        history.innerText = "尚未開獎";
+        return;
+    }
+
+    drawnNumbers.forEach(number => {
+
+        const item = document.createElement("div");
+
+        item.className = "history-number";
+        item.innerText = number;
+
+        history.appendChild(item);
+
+    });
+
+}
+
+const socket = io();
+
+socket.emit("joinRoom", {
+    roomId: roomId,
+    name: playerName
+});
+
+socket.on("joinError", message => {
+
+    alert("❌ " + message);
+
+    window.location.href = "/";
+
+});
+
+socket.on("joinSuccess", data => {
+
+    if (Number(data.size) !== gameSize) {
+
+        localStorage.setItem("gameSize", data.size);
+
+        location.reload();
+
+    }
+
+});
+socket.on("playersUpdate", data => {
+    const list = document.getElementById("playerList");
+    const count = document.getElementById("playerCount");
+
+    if (!list || !count) return;
+
+    count.innerText = data.count;
+
+    list.innerHTML = "";
+
+    data.players.forEach((player, index) => {
+        const item = document.createElement("div");
+
+        let rankIcon = (index + 1) + ".";
+
+if (index === 0) rankIcon = "🥇";
+if (index === 1) rankIcon = "🥈";
+if (index === 2) rankIcon = "🥉";
+
+item.innerText =
+    rankIcon + " " + player.name +
+    "｜已點 " + (player.hitCount || 0) + " 格" +
+    "｜賓果 " + (player.bingoLines || 0) + " 線";
+
+        list.appendChild(item);
+    });
+});
+socket.on("numberDrawn", data => {
+
+    const number = Number(data.number);
+currentDrawnNumber = number;
+
+    document.getElementById("currentNumber").innerText = number;
+
+});
+
+createBoard();
+
+</script>
+</script>
+
+<!-- 已加入玩家 -->
+<div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.08); border-radius:15px;">
+    <h3>👥 已加入連線玩家：<span id="playerCount">0</span> 人</h3>
+    <div id="playerList"></div>
+</div>
+
+</body>
+</html>
+</body>
+</html>
