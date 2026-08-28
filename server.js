@@ -11,7 +11,7 @@ const io = new Server(server);
 // ==============================
 // 管理員密碼
 // ==============================
-const ADMIN_PASSWORD = "1100829";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // 已登入管理員
 const adminSessions = new Set();
