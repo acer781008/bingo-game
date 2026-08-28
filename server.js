@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
@@ -18,8 +18,88 @@ const adminSessions = new Set();
 
 // 遊戲房間
 const rooms = {};
+const scheduledStartTimers = {};
+const autoDrawTimers = {};
+const autoPauseTimers = {};
 
 app.use(express.json());
+
+function clearRoomAutoTimers(roomId) {
+    if (autoDrawTimers[roomId]) {
+        clearInterval(autoDrawTimers[roomId]);
+        delete autoDrawTimers[roomId];
+    }
+
+    if (autoPauseTimers[roomId]) {
+        clearTimeout(autoPauseTimers[roomId]);
+        delete autoPauseTimers[roomId];
+    }
+}
+
+function drawNextNumber(roomId) {
+    const room = rooms[roomId];
+
+    if (!room || !room.started) {
+        return false;
+    }
+
+    const available = [];
+
+    for (let i = 1; i <= room.size; i++) {
+        if (!room.drawn.includes(i)) {
+            available.push(i);
+        }
+    }
+
+    if (available.length === 0) {
+        clearRoomAutoTimers(roomId);
+        room.ended = true;
+        io.to(roomId).emit("gameEnded");
+        return false;
+    }
+
+    const number =
+        available[Math.floor(Math.random() * available.length)];
+
+    room.drawn.push(number);
+
+    io.to(roomId).emit("numberDrawn", {
+        number: number
+    });
+
+    return number;
+}
+
+function startServerAutoDraw(roomId) {
+    const room = rooms[roomId];
+
+    if (!room || !room.started) {
+        return;
+    }
+
+    clearRoomAutoTimers(roomId);
+
+    const intervalSeconds = Number(room.autoSeconds) || 3;
+    const pauseSeconds = Number(room.autoPauseSeconds) || 60;
+
+    // 遊戲一開始先立即開第一個號碼
+    drawNextNumber(roomId);
+
+    autoDrawTimers[roomId] = setInterval(() => {
+        drawNextNumber(roomId);
+    }, intervalSeconds * 1000);
+
+    autoPauseTimers[roomId] = setTimeout(() => {
+        clearRoomAutoTimers(roomId);
+
+        const currentRoom = rooms[roomId];
+        if (currentRoom) {
+            currentRoom.ended = true;
+        }
+
+        io.to(roomId).emit("gameEnded");
+    }, pauseSeconds * 1000);
+}
 
 // ==============================
 // Cookie
@@ -154,7 +234,10 @@ app.post("/api/admin/create-room", (req, res) => {
         size: size,
         players: {},
         drawn: [],
-        started: false
+        started: false,
+        ended: false,
+        autoSeconds: 3,
+        autoPauseSeconds: 60
     };
 
     res.json({
@@ -194,7 +277,104 @@ app.post("/api/admin/start-game", (req, res) => {
     res.json({
         success: true
     });
-});// ==============================
+});
+app.post("/api/admin/schedule-start", (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({
+            success: false,
+            message: "未登入管理員"
+        });
+    }
+
+    const roomId = String(req.body.roomId || "").trim();
+    const startTime = Number(req.body.startTime);
+    const autoSeconds = Number(req.body.autoSeconds);
+    const autoPauseSeconds = Number(req.body.autoPauseSeconds);
+
+    const room = rooms[roomId];
+
+    if (!room) {
+        return res.status(404).json({
+            success: false,
+            message: "找不到房間"
+        });
+    }
+
+    if (room.started) {
+        return res.status(400).json({
+            success: false,
+            message: "遊戲已經開始"
+        });
+    }
+
+    if (!Number.isFinite(startTime) || startTime <= Date.now()) {
+        return res.status(400).json({
+            success: false,
+            message: "開始時間必須晚於現在時間"
+        });
+    }
+
+    const allowedIntervals = [2, 3, 5, 10];
+    const allowedDurations = [30, 60, 90, 120];
+
+    if (!allowedIntervals.includes(autoSeconds)) {
+        return res.status(400).json({
+            success: false,
+            message: "開獎間隔設定錯誤"
+        });
+    }
+
+    if (!allowedDurations.includes(autoPauseSeconds)) {
+        return res.status(400).json({
+            success: false,
+            message: "遊戲時間設定錯誤"
+        });
+    }
+
+    if (scheduledStartTimers[roomId]) {
+        clearTimeout(scheduledStartTimers[roomId]);
+    }
+
+    clearRoomAutoTimers(roomId);
+
+    room.scheduledStartAt = startTime;
+    room.autoSeconds = autoSeconds;
+    room.autoPauseSeconds = autoPauseSeconds;
+    room.ended = false;
+
+    const delay = startTime - Date.now();
+
+    scheduledStartTimers[roomId] = setTimeout(() => {
+        const currentRoom = rooms[roomId];
+
+        if (!currentRoom || currentRoom.started) {
+            delete scheduledStartTimers[roomId];
+            return;
+        }
+
+        currentRoom.started = true;
+        currentRoom.ended = false;
+
+        io.to(roomId).emit("gameStarted");
+
+        // ★ 到排程時間後，由伺服器自己開始自動開獎
+        startServerAutoDraw(roomId);
+
+        delete scheduledStartTimers[roomId];
+    }, delay);
+
+    io.to(roomId).emit("gameScheduled", {
+        startTime: startTime
+    });
+
+    res.json({
+        success: true,
+        startTime: startTime,
+        autoSeconds: autoSeconds,
+        autoPauseSeconds: autoPauseSeconds
+    });
+});
+// ==============================
 // 開下一個號碼 API
 // ==============================
 app.post("/api/admin/draw-number", (req, res) => {
@@ -222,35 +402,20 @@ app.post("/api/admin/draw-number", (req, res) => {
         });
     }
 
-    const available = [];
+    const number = drawNextNumber(roomId);
 
-    for (let i = 1; i <= room.size; i++) {
-        if (!room.drawn.includes(i)) {
-            available.push(i);
-        }
-    }
-
-    if (available.length === 0) {
+    if (number === false) {
         return res.status(400).json({
             success: false,
             message: "所有號碼都已開完"
         });
     }
 
-    const number =
-        available[Math.floor(Math.random() * available.length)];
-
-    room.drawn.push(number);
-
-    io.to(roomId).emit("numberDrawn", {
-        number: number
-    });
-
     res.json({
         success: true,
         number: number
     });
-}); 
+});
 // ==============================
 // 查詢房間
 // ==============================
@@ -272,7 +437,12 @@ app.get("/api/room/:roomId", (req, res) => {
             roomId: room.roomId,
             size: room.size,
             playerCount: Object.keys(room.players).length,
-            started: room.started
+            started: room.started,
+            scheduledStartAt: room.scheduledStartAt || null,
+            autoSeconds: room.autoSeconds || 3,
+            autoPauseSeconds: room.autoPauseSeconds || 60,
+            currentNumber: room.drawn.length ? room.drawn[room.drawn.length - 1] : null,
+            players: room.players
         }
     });
 });
@@ -286,6 +456,17 @@ app.use(express.static("public"));
 io.on("connection", (socket) => {
 
     console.log("有人連線：" + socket.id);
+
+    // 主控室監看房間，用來即時收到開獎號碼與遊戲狀態
+    socket.on("watchRoom", ({ roomId }) => {
+        roomId = String(roomId || "").trim();
+
+        if (!rooms[roomId]) {
+            return;
+        }
+
+        socket.join(roomId);
+    });
 
     // 玩家加入房間
     socket.on("joinRoom", ({ roomId, name }) => {
@@ -324,15 +505,25 @@ for (const id in room.players) {
         socket.data.roomId = roomId;
 
         socket.emit("joinSuccess", {
-            roomId: room.roomId,
-            size: room.size
-        });
+    roomId: room.roomId,
+    size: room.size,
+    scheduledStartAt: room.scheduledStartAt || null
+});
 
         io.to(roomId).emit("playersUpdate", {
             count: Object.keys(room.players).length,
             players: Object.values(room.players)
         });
     });
+socket.on("gameEnded", ({ roomId }) => {
+    io.to(roomId).emit("gameEnded");
+});
+socket.on("startCountdown", ({ roomId, seconds, startTime }) => {
+    io.to(roomId).emit("startCountdown", {
+        seconds: seconds,
+        startTime: startTime
+    });
+});
 // 玩家按對號碼，加 1 分
 socket.on("addScore", (stats) => {
     const roomId = socket.data.roomId;
