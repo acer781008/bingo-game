@@ -1,343 +1,323 @@
-const express = require("express");
-const http = require("http");
-const path = require("path");
-const crypto = require("crypto");
-const { Server } = require("socket.io");
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const crypto = require('crypto');
+const { Server } = require('socket.io');
 
 const app = express();
-const httpServer = http.createServer(app);
-const io = new Server(httpServer);
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 
-const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+app.use(express.json({ limit: '10kb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-const adminSessions = new Set();
+const adminTokens = new Map();
+const loginAttempts = new Map();
+const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+function cleanExpiredTokens() {
+  const now = Date.now();
+  for (const [token, expiresAt] of adminTokens) {
+    if (expiresAt <= now) adminTokens.delete(token);
+  }
+}
+
+function validAdminToken(token) {
+  cleanExpiredTokens();
+  if (!token || !adminTokens.has(token)) return false;
+  return adminTokens.get(token) > Date.now();
+}
+
+app.post('/api/admin/login', (req, res) => {
+  const configuredPassword = process.env.ADMIN_PASSWORD;
+  if (!configuredPassword) {
+    return res.status(503).json({ ok: false, message: '尚未設定管理員密碼（ADMIN_PASSWORD）' });
+  }
+
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const attempt = loginAttempts.get(ip) || { count: 0, resetAt: now + 10 * 60 * 1000 };
+  if (now > attempt.resetAt) { attempt.count = 0; attempt.resetAt = now + 10 * 60 * 1000; }
+  if (attempt.count >= 10) {
+    return res.status(429).json({ ok: false, message: '嘗試次數太多，請稍後再試' });
+  }
+
+  const supplied = String(req.body?.password || '');
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(String(configuredPassword));
+  const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!match) {
+    attempt.count += 1;
+    loginAttempts.set(ip, attempt);
+    return res.status(401).json({ ok: false, message: '管理密碼錯誤' });
+  }
+
+  loginAttempts.delete(ip);
+  const token = crypto.randomBytes(32).toString('hex');
+  adminTokens.set(token, now + ADMIN_TOKEN_TTL_MS);
+  res.json({ ok: true, token, expiresInMs: ADMIN_TOKEN_TTL_MS });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = String(req.body?.token || '');
+  if (token) adminTokens.delete(token);
+  res.json({ ok: true });
+});
+
 const rooms = new Map();
-const timers = new Map();
 
-app.use(express.json());
-
-function readCookies(req) {
-  const out = {};
-  String(req.headers.cookie || "").split(";").forEach(part => {
-    const i = part.indexOf("=");
-    if (i > 0) out[part.slice(0, i).trim()] = part.slice(i + 1).trim();
-  });
-  return out;
-}
-
-function isAdmin(req) {
-  const token = readCookies(req).admin_session;
-  return !!token && adminSessions.has(token);
-}
-
-function getTimers(roomId) {
-  if (!timers.has(roomId)) timers.set(roomId, {});
-  return timers.get(roomId);
-}
-
-function clearRoomTimers(roomId) {
-  const t = getTimers(roomId);
-  clearTimeout(t.schedule);
-  clearTimeout(t.countdown);
-  clearTimeout(t.end);
-  clearInterval(t.draw);
-  timers.set(roomId, {});
-}
-
-function roomInfo(room) {
+function defaultRoom(roomId) {
   return {
-    roomId: room.id,
-    size: room.size,
-    phase: room.phase,
-    scheduledAt: room.scheduledAt,
-    countdownSeconds: room.countdownSeconds,
-    countdownEndsAt: room.countdownEndsAt || null,
-    gameSeconds: room.gameSeconds,
-    gameEndsAt: room.gameEndsAt || null,
-    drawIntervalMs: room.drawIntervalMs,
-    currentNumber: room.currentNumber || null,
-    drawToken: room.drawToken || 0
+    id: roomId,
+    sessionNo: roomId || '001',
+    difficulty: 'easy',
+    durationSec: 60,
+    moleIntervalMs: 1000,
+    countdownSec: 30,
+    startAt: null,
+    note: '',
+    status: 'waiting',
+    startedAt: null,
+    endsAt: null,
+    players: new Map(),
+    activeMoles: [],
+    moleTimer: null,
+    startTimer: null,
+    countdownTimer: null,
+    endTimer: null,
+    countdown: null
   };
 }
 
-function ranking(room) {
-  return [...room.players.values()]
-    .sort((a, b) =>
-      (b.bingoLines - a.bingoLines) ||
-      (b.hitCount - a.hitCount) ||
-      ((a.finishAt || Infinity) - (b.finishAt || Infinity))
-    )
-    .map((p, i) => ({
-      rank: i + 1,
-      name: p.name,
-      hitCount: p.hitCount,
-      bingoLines: p.bingoLines,
-      finishAt: p.finishAt || null
-    }));
+function getRoom(roomId) {
+  if (!rooms.has(roomId)) rooms.set(roomId, defaultRoom(roomId));
+  return rooms.get(roomId);
 }
 
-function emitRanking(room) {
-  io.to(room.id).emit("rankingUpdate", ranking(room));
+function difficultyConfig(difficulty) {
+  if (difficulty === 'medium') return { grid: 4, simultaneous: 2, defaultInterval: 800 };
+  if (difficulty === 'hard') return { grid: 5, simultaneous: 3, defaultInterval: 550 };
+  return { grid: 3, simultaneous: 1, defaultInterval: 1200 };
+}
+
+function publicPlayers(room) {
+  return [...room.players.values()]
+    .map(p => ({ name: p.name, score: p.score, connected: p.connected, joinedAt: p.joinedAt }))
+    .sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
+    .map((p, i) => ({ ...p, rank: i + 1 }));
+}
+
+function publicRoom(room) {
+  const cfg = difficultyConfig(room.difficulty);
+  return {
+    id: room.id,
+    sessionNo: room.sessionNo,
+    difficulty: room.difficulty,
+    durationSec: room.durationSec,
+    moleIntervalMs: room.moleIntervalMs,
+    countdownSec: room.countdownSec,
+    startAt: room.startAt,
+    note: room.note,
+    status: room.status,
+    startedAt: room.startedAt,
+    endsAt: room.endsAt,
+    countdown: room.countdown,
+    grid: cfg.grid,
+    players: publicPlayers(room),
+    activeMoles: room.activeMoles
+  };
+}
+
+function emitRoom(room) {
+  io.to(room.id).emit('room:update', publicRoom(room));
+}
+
+function clearTimers(room) {
+  for (const key of ['moleTimer','startTimer','countdownTimer','endTimer']) {
+    if (room[key]) clearInterval(room[key]);
+    if (room[key]) clearTimeout(room[key]);
+    room[key] = null;
+  }
+}
+
+function generateMoles(room) {
+  const cfg = difficultyConfig(room.difficulty);
+  const total = cfg.grid * cfg.grid;
+  const count = Math.min(cfg.simultaneous, total);
+  const set = new Set();
+  while (set.size < count) set.add(Math.floor(Math.random() * total));
+  room.activeMoles = [...set];
+  io.to(room.id).emit('moles:update', room.activeMoles);
 }
 
 function finishGame(room) {
-  if (!room || room.phase === "ended") return;
-  clearRoomTimers(room.id);
-  room.phase = "ended";
-  room.currentNumber = null;
-  io.to(room.id).emit("gameEnded", { ranking: ranking(room) });
-}
-
-function drawNext(room) {
-  if (!room || room.phase !== "playing") return;
-
-  const remaining = [];
-  for (let n = 1; n <= room.size; n++) {
-    if (!room.drawn.includes(n)) remaining.push(n);
-  }
-  if (!remaining.length) return finishGame(room);
-
-  const number = remaining[Math.floor(Math.random() * remaining.length)];
-  room.drawn.push(number);
-  room.currentNumber = number;
-  room.drawToken += 1;
-
-  io.to(room.id).emit("numberDrawn", {
-    number,
-    token: room.drawToken
-  });
+  if (room.status === 'finished') return;
+  if (room.moleTimer) clearInterval(room.moleTimer);
+  if (room.endTimer) clearTimeout(room.endTimer);
+  room.moleTimer = null;
+  room.endTimer = null;
+  room.activeMoles = [];
+  room.status = 'finished';
+  room.countdown = null;
+  emitRoom(room);
+  io.to(room.id).emit('game:finished', publicRoom(room));
 }
 
 function startGame(room) {
-  if (!room || room.phase !== "countdown") return;
-
-  room.phase = "playing";
-  room.gameEndsAt = Date.now() + room.gameSeconds * 1000;
-
-  io.to(room.id).emit("gameStarted", {
-    gameEndsAt: room.gameEndsAt
-  });
-
-  drawNext(room);
-
-  const t = getTimers(room.id);
-  t.draw = setInterval(() => drawNext(room), room.drawIntervalMs);
-  t.end = setTimeout(() => finishGame(room), room.gameSeconds * 1000);
+  if (room.status === 'playing') return;
+  clearTimers(room);
+  room.status = 'playing';
+  room.startedAt = Date.now();
+  room.endsAt = room.startedAt + room.durationSec * 1000;
+  room.countdown = null;
+  for (const p of room.players.values()) p.score = 0;
+  generateMoles(room);
+  room.moleTimer = setInterval(() => generateMoles(room), Math.max(250, room.moleIntervalMs));
+  room.endTimer = setTimeout(() => finishGame(room), room.durationSec * 1000);
+  emitRoom(room);
+  io.to(room.id).emit('game:started', publicRoom(room));
 }
 
-function startCountdown(room) {
-  if (!room || room.phase !== "waiting") return;
-
-  room.phase = "countdown";
-  room.countdownEndsAt = Date.now() + room.countdownSeconds * 1000;
-
-  io.to(room.id).emit("countdownStarted", {
-    countdownEndsAt: room.countdownEndsAt,
-    countdownSeconds: room.countdownSeconds
-  });
-
-  const t = getTimers(room.id);
-  clearTimeout(t.schedule);
-  t.countdown = setTimeout(() => startGame(room), room.countdownSeconds * 1000);
-}
-
-app.post("/api/admin/login", (req, res) => {
-  if (String(req.body.password || "") !== ADMIN_PASSWORD) {
-    return res.status(401).json({ success: false, message: "管理員密碼錯誤" });
-  }
-
-  const token = crypto.randomBytes(24).toString("hex");
-  adminSessions.add(token);
-  res.setHeader("Set-Cookie", `admin_session=${token}; HttpOnly; Path=/; SameSite=Lax`);
-  res.json({ success: true });
-});
-
-app.get("/admin.html", (req, res) => {
-  if (!isAdmin(req)) return res.redirect("/admin-login.html");
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-app.post("/api/admin/create-room", (req, res) => {
-  if (!isAdmin(req)) {
-    return res.status(401).json({ success: false, message: "未登入管理員" });
-  }
-
-  const roomId = String(req.body.roomId || "").trim();
-  const playerPassword = String(req.body.playerPassword || "").trim();
-  const size = Number(req.body.size);
-  const scheduledAt = Number(req.body.scheduledAt);
-  const countdownSeconds = Number(req.body.countdownSeconds);
-  const gameSeconds = Number(req.body.gameSeconds);
-  const drawIntervalMs = Number(req.body.drawIntervalMs);
-  const note = String(req.body.note || "").trim();
-
-  if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
-  if (!playerPassword) return res.status(400).json({ success: false, message: "請輸入房間密碼" });
-  if (rooms.has(roomId)) return res.status(400).json({ success: false, message: "房間號碼已存在" });
-  if (![25, 36, 49, 64].includes(size)) return res.status(400).json({ success: false, message: "盤面格數錯誤" });
-  if (![30, 60, 90].includes(countdownSeconds)) return res.status(400).json({ success: false, message: "倒數秒數錯誤" });
-  if (![60, 90, 120].includes(gameSeconds)) return res.status(400).json({ success: false, message: "遊戲秒數錯誤" });
-  if (![1000,1500,2000,2500,3000,3500,4000,4500,5000].includes(drawIntervalMs)) {
-    return res.status(400).json({ success: false, message: "開獎速度錯誤" });
-  }
-  if (!Number.isFinite(scheduledAt)) {
-    return res.status(400).json({ success: false, message: "請選擇正確的開賽日期時間" });
-  }
-  if (scheduledAt <= Date.now()) {
-    return res.status(400).json({ success: false, message: "開賽日期時間必須晚於現在" });
-  }
-
-  const room = {
-    id: roomId,
-    playerPassword,
-    version: "original",
-    size,
-    scheduledAt,
-    countdownSeconds,
-    gameSeconds,
-    drawIntervalMs,
-    note,
-    phase: "waiting",
-    countdownEndsAt: null,
-    gameEndsAt: null,
-    currentNumber: null,
-    drawToken: 0,
-    drawn: [],
-    players: new Map()
-  };
-
-  rooms.set(roomId, room);
-
-  const t = getTimers(roomId);
-  t.schedule = setTimeout(() => {
-    const current = rooms.get(roomId);
-    if (current && current.phase === "waiting") startCountdown(current);
-  }, Math.max(0, scheduledAt - Date.now()));
-
-  res.json({
-    success: true,
-    room: roomInfo(room)
-  });
-});
-
-app.get("/api/admin/room/:roomId", (req, res) => {
-  if (!isAdmin(req)) {
-    return res.status(401).json({ success: false, message: "未登入管理員" });
-  }
-  const room = rooms.get(String(req.params.roomId || "").trim());
-  if (!room) return res.status(404).json({ success: false, message: "找不到房間" });
-
-  res.json({
-    success: true,
-    room: {
-      ...roomInfo(room),
-      playerCount: room.players.size,
-      ranking: ranking(room)
+function beginCountdown(room, seconds = room.countdownSec || 30) {
+  clearTimers(room);
+  room.status = 'countdown';
+  room.countdown = seconds;
+  emitRoom(room);
+  io.to(room.id).emit('game:countdown', room.countdown);
+  room.countdownTimer = setInterval(() => {
+    room.countdown -= 1;
+    if (room.countdown <= 0) {
+      clearInterval(room.countdownTimer);
+      room.countdownTimer = null;
+      startGame(room);
+      return;
     }
+    io.to(room.id).emit('game:countdown', room.countdown);
+    emitRoom(room);
+  }, 1000);
+}
+
+function scheduleStart(room) {
+  if (!room.startAt) return;
+  clearTimers(room);
+  const ms = room.startAt - Date.now();
+  const countdownMs = room.countdownSec * 1000;
+  if (ms <= countdownMs) {
+    beginCountdown(room, room.countdownSec);
+    return;
+  }
+  room.status = 'scheduled';
+  room.countdown = null;
+  room.startTimer = setTimeout(() => beginCountdown(room, room.countdownSec), ms - countdownMs);
+  emitRoom(room);
+}
+
+io.on('connection', socket => {
+  socket.on('admin:join', ({ roomId, token }) => {
+    if (!validAdminToken(token)) { socket.emit('admin:authError', '請先輸入正確的管理密碼'); return; }
+    roomId = String(roomId || '001').trim();
+    const room = getRoom(roomId);
+    socket.join(roomId);
+    socket.data.roomId = roomId;
+    socket.data.role = 'admin';
+    socket.data.adminAuthorized = true;
+    socket.emit('room:update', publicRoom(room));
   });
-});
 
-app.use(express.static(path.join(__dirname, "public")));
+  socket.on('player:join', ({ roomId, name }) => {
+    roomId = String(roomId || '').trim();
+    name = String(name || '').trim().slice(0, 24);
+    if (!roomId || !name) return;
+    const room = getRoom(roomId);
+    socket.join(roomId);
+    socket.data.roomId = roomId;
+    socket.data.role = 'player';
+    socket.data.playerName = name;
+    let p = room.players.get(name);
+    if (!p) {
+      p = { name, score: 0, connected: true, joinedAt: Date.now(), socketIds: new Set() };
+      room.players.set(name, p);
+    }
+    p.connected = true;
+    p.socketIds.add(socket.id);
+    socket.emit('player:joined', { name, room: publicRoom(room) });
+    emitRoom(room);
+  });
 
-io.on("connection", socket => {
-  socket.on("watchRoom", ({ roomId }) => {
-    const room = rooms.get(String(roomId || "").trim());
+  socket.on('admin:settings', data => {
+    if (!socket.data.adminAuthorized) { socket.emit('admin:authError', '管理員驗證已失效，請重新登入'); return; }
+    const roomId = String(data.roomId || socket.data.roomId || '001').trim();
+    const room = getRoom(roomId);
+    const requestedDuration = Number(data.durationSec);
+    const duration = [60, 90, 120].includes(requestedDuration) ? requestedDuration : 60;
+    const difficulty = ['easy','medium','hard'].includes(data.difficulty) ? data.difficulty : 'easy';
+    const interval = Math.min(5000, Math.max(250, Number(data.moleIntervalMs) || difficultyConfig(difficulty).defaultInterval));
+    room.sessionNo = String(data.sessionNo || roomId).trim().slice(0, 30) || roomId;
+    room.difficulty = difficulty;
+    room.durationSec = duration;
+    room.moleIntervalMs = interval;
+    room.countdownSec = [30,60,90,120].includes(Number(data.countdownSec)) ? Number(data.countdownSec) : 30;
+    room.note = String(data.note || '').slice(0, 500);
+    room.startAt = data.startAt ? Number(data.startAt) : null;
+    if (room.startAt && room.status !== 'playing') scheduleStart(room);
+    else emitRoom(room);
+  });
+
+  socket.on('admin:startNow', ({ roomId }) => {
+    if (!socket.data.adminAuthorized) { socket.emit('admin:authError', '管理員驗證已失效，請重新登入'); return; }
+    const room = getRoom(String(roomId || socket.data.roomId || '001').trim());
+    beginCountdown(room, room.countdownSec);
+  });
+
+  socket.on('admin:finish', ({ roomId }) => {
+    if (!socket.data.adminAuthorized) { socket.emit('admin:authError', '管理員驗證已失效，請重新登入'); return; }
+    const room = getRoom(String(roomId || socket.data.roomId || '001').trim());
+    finishGame(room);
+  });
+
+  socket.on('admin:reset', ({ roomId }) => {
+    if (!socket.data.adminAuthorized) { socket.emit('admin:authError', '管理員驗證已失效，請重新登入'); return; }
+    const room = getRoom(String(roomId || socket.data.roomId || '001').trim());
+    clearTimers(room);
+    room.status = 'waiting';
+    room.startedAt = null;
+    room.endsAt = null;
+    room.activeMoles = [];
+    room.countdown = null;
+    room.startAt = null;
+    for (const p of room.players.values()) p.score = 0;
+    emitRoom(room);
+  });
+
+  socket.on('player:hit', ({ index }) => {
+    const roomId = socket.data.roomId;
+    const name = socket.data.playerName;
+    if (!roomId || !name) return;
+    const room = getRoom(roomId);
+    if (room.status !== 'playing') return;
+    if (!room.activeMoles.includes(Number(index))) return;
+    const p = room.players.get(name);
+    if (!p) return;
+    p.score += 1;
+    socket.emit('hit:success', { index: Number(index), points: 1, score: p.score });
+    room.activeMoles = room.activeMoles.filter(i => i !== Number(index));
+    io.to(room.id).emit('moles:update', room.activeMoles);
+    emitRoom(room);
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.data.role !== 'player') return;
+    const room = rooms.get(socket.data.roomId);
     if (!room) return;
-
-    socket.join(room.id);
-    socket.emit("roomState", {
-      ...roomInfo(room),
-      ranking: ranking(room),
-      playerCount: room.players.size
-    });
-  });
-
-  socket.on("joinRoom", ({ roomId, name, password, clientId }) => {
-    const room = rooms.get(String(roomId || "").trim());
-    const cleanName = String(name || "").trim();
-    const cleanClientId = String(clientId || "").trim();
-
-    if (!room) return socket.emit("joinError", "找不到這個房間");
-    if (!cleanName) return socket.emit("joinError", "請輸入玩家名稱");
-    if (!cleanClientId) return socket.emit("joinError", "玩家識別資料遺失，請重新整理後再試");
-    if (String(password || "") !== room.playerPassword) {
-      return socket.emit("joinError", "房間密碼錯誤");
-    }
-
-    const existing = room.players.get(cleanClientId);
-
-    // 遊戲正式開始後：只有開始前已經加入過的同一位玩家可以重新連線。
-    if ((room.phase === "playing" || room.phase === "ended") && !existing) {
-      return socket.emit("joinError", room.phase === "ended"
-        ? "本場遊戲已結束"
-        : "本場遊戲已開始，無法加入");
-    }
-
-    // 同一房間不可用不同裝置/分頁重複同名，避免排行榜混淆。
-    for (const [id, player] of room.players.entries()) {
-      if (id !== cleanClientId && player.name === cleanName) {
-        return socket.emit("joinError", "這個玩家名稱已有人使用");
-      }
-    }
-
-    const player = existing || {
-      clientId: cleanClientId,
-      name: cleanName,
-      hitCount: 0,
-      bingoLines: 0,
-      finishAt: null
-    };
-
-    player.name = cleanName;
-    player.socketId = socket.id;
-    room.players.set(cleanClientId, player);
-
-    socket.data.roomId = room.id;
-    socket.data.clientId = cleanClientId;
-    socket.join(room.id);
-
-    socket.emit("joinSuccess", {
-      ...roomInfo(room),
-      name: player.name,
-      hitCount: player.hitCount,
-      bingoLines: player.bingoLines
-    });
-
-    emitRanking(room);
-  });
-
-  socket.on("addScore", ({ hitCount, bingoLines, token }) => {
-    const room = rooms.get(socket.data.roomId);
-    if (!room || room.phase !== "playing") return;
-
-    const player = room.players.get(socket.data.clientId);
-    if (!player) return;
-
-    // 只接受目前這一期號碼的點擊結果。
-    if (Number(token) !== room.drawToken) return;
-
-    const newHits = Math.max(player.hitCount, Number(hitCount) || 0);
-    const newLines = Math.max(player.bingoLines, Number(bingoLines) || 0);
-
-    if (newLines > player.bingoLines && !player.finishAt) {
-      player.finishAt = Date.now();
-    }
-
-    player.hitCount = newHits;
-    player.bingoLines = newLines;
-
-    emitRanking(room);
-  });
-
-  socket.on("disconnect", () => {
-    // 不刪除玩家資格。
-    // index.html 跳到 game.html、重新整理、短暫斷線時，都能用 clientId 接回同一玩家。
-    const room = rooms.get(socket.data.roomId);
-    if (room) emitRanking(room);
+    const p = room.players.get(socket.data.playerName);
+    if (!p) return;
+    p.socketIds.delete(socket.id);
+    p.connected = p.socketIds.size > 0;
+    emitRoom(room);
   });
 });
 
-httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`Bingo New：http://localhost:${PORT}`);
-});
+app.get('/health', (req, res) => res.json({ ok: true }));
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Whack-a-Mole server running on ${PORT}`));
