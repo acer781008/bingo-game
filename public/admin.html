@@ -1,781 +1,147 @@
-﻿<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數字賓果主控室</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background: linear-gradient(135deg, #1f144d, #4c1d95, #0f5fa8);
-            color: white;
-            padding: 25px;
-        }
-
-        .wrap {
-            max-width: 900px;
-            margin: auto;
-        }
-
-        .panel {
-            background: rgba(18, 13, 55, 0.94);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 15px 45px rgba(0,0,0,0.35);
-        }
-
-        h1 {
-            text-align: center;
-            margin-top: 0;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #ccc;
-            margin-bottom: 30px;
-        }
-
-        .section {
-            background: rgba(255,255,255,0.08);
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 17px;
-        }
-
-        input,
-        select {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-size: 17px;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .create {
-            background: #ffd43b;
-            color: #241052;
-        }
-
-        .start {
-            background: #30d158;
-            color: white;
-        }
-
-        .draw {
-            background: #0a84ff;
-            color: white;
-        }
-
-        .auto {
-            background: #bf5af2;
-            color: white;
-        }
-
-        .pause {
-            background: #ff9f0a;
-            color: white;
-        }
-
-        .reset {
-            background: #ff453a;
-            color: white;
-        }
-
-        .back {
-            background: #666;
-            color: white;
-        }
-
-        .status {
-            font-size: 18px;
-            line-height: 1.8;
-        }
-
-        .number {
-            font-size: 60px;
-            font-weight: bold;
-            text-align: center;
-            padding: 20px;
-            color: #ffd43b;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="wrap">
-
-    <div class="panel">
-
-        <h1>👑 數字賓果主控室</h1>
-
-        <div class="subtitle">
-            建立房間・設定格數・控制開獎
-        </div>
-
-        <div class="section">
-
-            <label>房間號碼</label>
-
-            <input
-                id="room"
-                type="text"
-                placeholder="例如：8888"
-            >
-
-            <label>遊戲格數</label>
-
-            <select id="size">
-                <option value="25">5×5</option>
-<option value="36">6×6</option>
-<option value="49">7×7</option>
-<option value="64">8×8</option>
-            </select>
-
-          <button class="create" onclick="createRoom()">
-    🏠 建立遊戲房間
-</button>
-<button type="button" onclick="copyPlayerLink()">
-    🔗 複製玩家網址
-</button>
-<div id="startCountdown" style="margin-top:12px; font-size:22px; font-weight:bold;">
-    等待分享玩家網址
-</div>
-        <div id="roomStatus">房間狀態：尚未建立</div>
-<div id="sizeStatus">遊戲格數：尚未設定</div>
-<div id="playerStatus">目前玩家：0 人</div>
-
-        
-
-        </div>
-
-        <div class="section">
-    <h2>🎱 目前開獎號碼</h2>
-
-    <div class="number" id="adminCurrentNumber">
-        -
-    </div>
-</div>
-
-<div class="section">
-    <h2>🏆 即時排行榜</h2>
-    <div id="rankingList">尚無排名資料</div>
-</div>
-
-        <div class="section">
-
-<label>📅 遊戲開始時間</label>
-
-<input
-    type="datetime-local"
-    id="gameStartTime"
->
-            <button class="start" onclick="scheduleGameStart()">
-    ⏰ 設定開始時間
-</button>
-
-<div>
-  🎱 開獎間隔：
-  <select id="autoSeconds">
-    <option value="2">2秒</option>
-    <option value="3" selected>3秒</option>
-    <option value="5">5秒</option>
-    <option value="10">10秒</option>
-  </select>
-</div>
-<div style="margin-top:15px;">
-    <div>
-  ⏱ 遊戲時間：
-  <select id="autoPauseSeconds">
-    <option value="30">30秒</option>
-    <option value="60" selected>60秒</option>
-    <option value="90">90秒</option>
-    <option value="120">120秒</option>
-  </select>
-</div>
-            <button class="auto" onclick="startAutoDraw()">
-                ⚡ 自動開獎
-            </button>
-
-            <button class="pause" onclick="pauseAutoDraw()">
-                ⏸️ 暫停
-            </button>
-
-            <button class="reset">
-    ♻️ 重置遊戲
-</button>
-<button type="button" onclick="copyRanking()">
-    📋 複製排名
-</button>
-        </div>
-
-        <button
-            class="back"
-            onclick="location.href='index.html'">
-            ⬅️ 回玩家首頁
-        </button>
-
-    </div>
-
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
+<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><title>賓果主控室</title></head><body><div class="top"><h1>🎰 賓果遊戲（原始版）｜主控室</h1></div><div class="wrap"><div class="card"><h2>🎮 遊戲設定</h2><div class="grid"><div><label>遊戲版本</label><select id="ver"><option>原始版</option><option disabled>數字版（之後新增）</option><option disabled>圖案版（之後新增）</option></select></div><div><label>盤面格數</label><select id="size"><option value="25">5×5</option><option value="36">6×6</option><option value="49">7×7</option><option value="64">8×8</option></select></div><div><label>房間號碼</label><input id="rid" placeholder="管理員自設"></div><div><label>房間密碼</label><input id="rpass" placeholder="管理員自設"></div><div class="full"><label>📅 開賽日期時間</label><input id="when" type="datetime-local"></div><div><label>⏱️ 遊戲秒數</label><select id="game"><option>60</option><option>90</option><option>120</option></select></div><div><label>⏳ 開始前倒數</label><select id="count"><option>30</option><option>60</option><option>90</option></select></div><div class="full"><label>⚡ 開獎速度</label><select id="speed"><option value="1000">1秒</option><option value="1500">1.5秒</option><option value="2000">2秒</option><option value="2500">2.5秒</option><option value="3000">3秒</option><option value="3500">3.5秒</option><option value="4000">4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option></select></div></div><br><button onclick="createRoom()">建立房間</button></div><div id="ctl" class="hidden"><div class="card"><div class="row"><div><label>房間</label><b id="show"></b></div><div><label>玩家網址</label><input id="url" readonly></div><div><button class="purple" onclick="copyUrl()">複製玩家網址</button></div></div><div id="st" class="status">等待建立房間</div><div id="num" class="number">-</div></div><div class="card"><div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">📋 複製排行榜</button></div><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table></div></div></div><script src="/socket.io/socket.io.js"></script><script>
 const socket = io();
+const $ = (id) => document.getElementById(id);
 
-socket.on("connect", () => {
-    const savedRoomId = localStorage.getItem("adminRoomId");
+const el = {
+  size: $("size"),
+  roomId: $("rid"),
+  playerPassword: $("rpass"),
+  scheduledAt: $("when"),
+  gameSeconds: $("game"),
+  countdownSeconds: $("count"),
+  drawIntervalMs: $("speed"),
+  control: $("ctl"),
+  showRoom: $("show"),
+  playerUrl: $("url"),
+  status: $("st"),
+  currentNumber: $("num"),
+  rankBody: $("rb")
+};
 
-    if (savedRoomId) {
-        socket.emit("watchRoom", {
-            roomId: savedRoomId
-        });
-    }
-});
-const savedAdminRoomId = localStorage.getItem("adminRoomId");
+let activeRoom = "";
+let countdownTimer = null;
 
-if (savedAdminRoomId) {
-    document.getElementById("room").value = savedAdminRoomId;
-    restoreAdminRoom(savedAdminRoomId);
+function esc(x) {
+  return String(x).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
 }
 
-async function restoreAdminRoom(roomId) {
-    try {
-        const response = await fetch("/api/room/" + roomId);
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            localStorage.removeItem("adminRoomId");
-            return;
-        }
-
-        const room = data.room;
-
-        socket.emit("watchRoom", {
-            roomId: room.roomId
-        });
-
-        document.getElementById("room").value = room.roomId;
-
-        const sizeSelect = document.getElementById("size");
-        if (sizeSelect) {
-            sizeSelect.value = room.size;
-        }
-
-        const playerStatus = document.getElementById("playerStatus");
-        if (playerStatus) {
-            playerStatus.innerText =
-                "目前玩家：" + room.playerCount + " 人";
-        }
-
-        const roomStatus = document.getElementById("roomStatus");
-        if (roomStatus) {
-            roomStatus.innerText =
-                "房間狀態：" +
-                (room.started ? "遊戲進行中" : "已建立");
-        }
-
-        const sizeStatus = document.getElementById("sizeStatus");
-        if (sizeStatus) {
-            sizeStatus.innerText =
-                "遊戲格數：" + room.size + " 格";
-        }
-
-        if (room.scheduledStartAt && !room.started) {
-            const startTime = new Date(Number(room.scheduledStartAt));
-            const countdown = document.getElementById("startCountdown");
-
-            if (startCountdownTimer) {
-                clearInterval(startCountdownTimer);
-            }
-
-            function restoreCountdown() {
-                const remaining = startTime.getTime() - Date.now();
-
-                if (remaining <= 0) {
-                    clearInterval(startCountdownTimer);
-                    startCountdownTimer = null;
-
-                    if (countdown) {
-                        countdown.innerText = "▶ 遊戲開始！";
-                    }
-
-                    return;
-                }
-
-                const totalSeconds = Math.ceil(remaining / 1000);
-
-                const days = Math.floor(totalSeconds / 86400);
-                const hours = Math.floor((totalSeconds % 86400) / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                if (countdown) {
-                    countdown.innerText =
-                        "🕐 遊戲開始時間：" +
-                        startTime.toLocaleString("zh-TW") +
-                        "\n⏳ 剩餘：" +
-                        days + "天 " +
-                        hours + "時 " +
-                        minutes + "分 " +
-                        seconds + "秒";
-                }
-            }
-
-            restoreCountdown();
-
-            startCountdownTimer =
-                setInterval(restoreCountdown, 1000);
-        }
-
-    } catch (error) {
-        console.error("恢復管理房間失敗", error);
-    }
+function renderRanking(list) {
+  el.rankBody.innerHTML = list.map(p => `
+    <tr>
+      <td>${p.rank < 4 ? ["🥇","🥈","🥉"][p.rank - 1] : p.rank}</td>
+      <td>${esc(p.name)}</td>
+      <td>${p.hitCount}</td>
+      <td>${p.bingoLines}</td>
+      <td>${p.finishAt ? new Date(p.finishAt).toLocaleTimeString("zh-TW",{hour12:false}) : "—"}</td>
+    </tr>
+  `).join("");
 }
-socket.on("gameStarted", () => {
-    const countdown = document.getElementById("startCountdown");
 
-    if (countdown) {
-        countdown.innerText = "▶ 遊戲開始！";
-    }
-});
+function showCountdown(endAt) {
+  clearInterval(countdownTimer);
+  const update = () => {
+    const sec = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    el.status.textContent = sec > 0 ? `⏳ 遊戲倒數：${sec} 秒` : "▶ 遊戲開始！";
+    if (sec <= 0) clearInterval(countdownTimer);
+  };
+  update();
+  countdownTimer = setInterval(update, 250);
+}
 
-socket.on("numberDrawn", data => {
-    const currentNumber = document.getElementById("adminCurrentNumber");
+function toDatetimeLocalValue(date) {
+  const pad = n => String(n).padStart(2,"0");
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
-    if (currentNumber) {
-        currentNumber.innerText = data.number;
-    }
-});
+function setDefaultStartTime() {
+  // 不再強制預設延後 5 分鐘，也不限制只能從 1 分鐘後開始選。
+  // 管理員可自行選擇任何「晚於目前時間」的開賽日期時間。
+  el.scheduledAt.removeAttribute("min");
+}
 
-socket.on("gameEnded", () => {
-    const countdown = document.getElementById("startCountdown");
-
-    if (countdown) {
-        countdown.innerText = "🏁 遊戲結束";
-    }
-});
 async function createRoom() {
-    const roomId = document.getElementById("room").value.trim();
-    const size = Number(document.getElementById("size").value);
+  const roomId = el.roomId.value.trim();
+  const playerPassword = el.playerPassword.value.trim();
+  const dateText = el.scheduledAt.value;
 
-    if (!roomId) {
-        alert("請輸入房間號碼");
-        return;
-    }
+  if (!roomId) return alert("❌ 請輸入房間號碼");
+  if (!playerPassword) return alert("❌ 請輸入房間密碼");
+  if (!dateText) return alert("❌ 請先選擇開賽日期時間");
 
-    try {
-        const response = await fetch("/api/admin/create-room", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                roomId: roomId,
-                size: size
-            })
-        });
+  // datetime-local 格式固定是 YYYY-MM-DDTHH:mm，直接拆開建立本機時間，
+  // 避免不同瀏覽器對 new Date("YYYY-MM-DDTHH:mm") 的解析差異。
+  const match = dateText.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return alert("❌ 開賽日期時間格式錯誤，請重新選擇一次");
 
-        const data = await response.json();
+  const [, y, mo, d, h, mi] = match.map(Number);
+  const startDate = new Date(y, mo - 1, d, h, mi, 0, 0);
+  const scheduledAt = startDate.getTime();
 
-        if (!data.success) {
-            alert("❌ " + data.message);
-            return;
-        }
+  if (!Number.isFinite(scheduledAt)) {
+    return alert("❌ 無法讀取開賽日期時間，請重新選擇");
+  }
+  if (scheduledAt <= Date.now()) {
+    return alert("❌ 開賽日期時間必須晚於現在");
+  }
 
-        document.getElementById("roomStatus").innerText =
-            "房間狀態：✅ 已建立 " + data.room.roomId;
+  const body = {
+    roomId,
+    playerPassword,
+    size: Number(el.size.value),
+    scheduledAt,
+    gameSeconds: Number(el.gameSeconds.value),
+    countdownSeconds: Number(el.countdownSeconds.value),
+    drawIntervalMs: Number(el.drawIntervalMs.value)
+  };
 
-        document.getElementById("sizeStatus").innerText =
-            "遊戲格數：" + data.room.size + " 格";
+  const response = await fetch("/api/admin/create-room", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
 
-        document.getElementById("playerStatus").innerText =
-            "目前玩家：0 人";
+  const data = await response.json();
+  if (!data.success) return alert("❌ " + data.message);
 
-localStorage.setItem("adminRoomId", roomId);
+  activeRoom = data.room.roomId;
+  el.showRoom.textContent = activeRoom;
+  el.playerUrl.value = location.origin + "/?room=" + encodeURIComponent(activeRoom);
+  el.control.classList.remove("hidden");
+  socket.emit("watchRoom", {roomId: activeRoom});
 
-socket.emit("watchRoom", {
-    roomId: roomId
+  const t = new Date(data.room.scheduledAt);
+  el.status.textContent =
+    "🕐 預定開賽：" +
+    t.toLocaleString("zh-TW",{hour12:false}) +
+    "｜時間到自動開始倒數";
+
+  alert("✅ 房間建立成功");
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(el.playerUrl.value)
+    .then(() => alert("✅ 已複製玩家網址"));
+}
+
+function copyRank() {
+  const text = [...el.rankBody.querySelectorAll("tr")]
+    .map(tr => [...tr.children].map(td => td.innerText).join("｜"))
+    .join("\n");
+  navigator.clipboard.writeText("🏆 賓果排行榜\n" + text)
+    .then(() => alert("✅ 已複製排行榜"));
+}
+
+socket.on("rankingUpdate", renderRanking);
+socket.on("countdownStarted", d => showCountdown(d.countdownEndsAt));
+socket.on("gameStarted", () => el.status.textContent = "▶ 遊戲進行中");
+socket.on("numberDrawn", d => el.currentNumber.textContent = d.number);
+socket.on("gameEnded", d => {
+  el.status.textContent = "🏁 遊戲結束";
+  el.currentNumber.textContent = "-";
+  renderRanking(d.ranking || []);
 });
 
-        alert("✅ 房間建立成功！");
-
-    } catch (error) {
-        alert("❌ 無法連接伺服器");
-    }
-}
- async function startGame() {
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!roomId) {
-        alert("請輸入房間號碼");
-        return false;
-    }
-
-    try {
-        const response = await fetch("/api/admin/start-game", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                roomId: roomId
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            alert("❌ " + data.message);
-            return false;
-        }
-
-        alert("▶ 遊戲開始！");
-        return true;
-
-    } catch (error) {
-        alert("❌ 無法連接伺服器");
-        return false;
-    }
-} 
-async function drawNumber() {
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!roomId) {
-        alert("請輸入房間號碼");
-        return false;
-    }
-
-    try {
-        const response = await fetch("/api/admin/draw-number", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                roomId: roomId
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            if (data.message === "所有號碼都已開完") {
-                return false;
-            }
-
-            alert("❌ " + data.message);
-            return false;
-        }
-
-        document.querySelector(".number").innerText = data.number;
-        return true;
-
-    } catch (error) {
-        alert("❌ 無法連接伺服器");
-        return false;
-    }
-}
-async function updatePlayerCount() {
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!roomId) return;
-
-    try {
-        const response = await fetch("/api/room/" + roomId);
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-
-        if (data.success) {
-            document.getElementById("playerStatus").innerText =
-                "目前玩家：" + data.room.playerCount + " 人";
-        }
-    } catch (error) {
-        console.log("讀取玩家人數失敗");
-    }
-}
-let autoDrawTimer = null;
-let autoPauseTimer = null;
-
-function startAutoDraw() {
-    const seconds = Number(
-        document.getElementById("autoSeconds").value
-    );
-
-    const pauseSeconds = Number(
-        document.getElementById("autoPauseSeconds").value
-    );
-
-    if (autoDrawTimer) {
-        clearInterval(autoDrawTimer);
-    }
-
-    if (autoPauseTimer) {
-        clearTimeout(autoPauseTimer);
-    }
-
-    drawNumber();
-
-autoDrawTimer = setInterval(async () => {
-    const success = await drawNumber();
-
-    if (!success) {
-        clearInterval(autoDrawTimer);
-        autoDrawTimer = null;
-
-        if (autoPauseTimer) {
-            clearTimeout(autoPauseTimer);
-            autoPauseTimer = null;
-        }
-
-        const roomId = document.getElementById("room").value.trim();
-        socket.emit("gameEnded", { roomId: roomId });
-
-        alert("🏁 所有號碼都已開完，遊戲結束！");
-    }
-}, seconds * 1000);
-
-    autoPauseTimer = setTimeout(() => {
-        if (autoDrawTimer) {
-            clearInterval(autoDrawTimer);
-            autoDrawTimer = null;
-        }
-
-        autoPauseTimer = null;
-const roomId = document.getElementById("room").value.trim();
-socket.emit("gameEnded", { roomId: roomId });
-        alert("⏸ 已到設定時間，自動開獎已暫停");
-    }, pauseSeconds * 1000);
-}
-
-
-function pauseAutoDraw() {
-    if (autoDrawTimer) {
-        clearInterval(autoDrawTimer);
-        autoDrawTimer = null;
-    }
-
-    if (autoPauseTimer) {
-        clearTimeout(autoPauseTimer);
-        autoPauseTimer = null;
-    }
-
-    alert("⏸ 自動開獎已暫停");
-}
-function copyPlayerLink() {
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!roomId) {
-        alert("⚠️ 請先輸入房間號碼並建立房間");
-        return;
-    }
-
-    const playerUrl = window.location.origin + "/?room=" + encodeURIComponent(roomId);
-
-    navigator.clipboard.writeText(playerUrl)
-       .then(() => {
-    alert("✅ 玩家網址已複製！\n\n" + playerUrl);
-    
-})
-        .catch(() => {
-            alert("❌ 網址複製失敗");
-        });
-}
-async function copyRanking() {
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!roomId) {
-        alert("⚠️ 請先輸入房間號碼");
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/room/" + roomId);
-        const data = await response.json();
-
-        if (!data.success) {
-            alert("❌ 讀取排名失敗");
-            return;
-        }
-
-        const players = Object.values(data.room.players || {});
-
-        players.sort((a, b) => {
-    if ((b.bingoLines || 0) !== (a.bingoLines || 0)) {
-        return (b.bingoLines || 0) - (a.bingoLines || 0);
-    }
-
-    return (b.hitCount || 0) - (a.hitCount || 0);
-});
-
-        let text = "🏆 賓果排名\n\n";
-
-        players.forEach((player, index) => {
-            text += (index + 1) + ". " + player.name +
-        "｜已點 " + (player.hitCount || 0) + " 格" +
-        "｜賓果 " + (player.bingoLines || 0) + " 線\n";
-        });
-
-        await navigator.clipboard.writeText(text);
-        alert("✅ 排名已複製！");
-    } catch (error) {
-        alert("❌ 複製排名失敗");
-    }
-}
-let startCountdownTimer = null;
-
-async function scheduleGameStart() {
-    const roomId = document.getElementById("room").value.trim();
-    const startTimeValue = document.getElementById("gameStartTime").value;
-    const countdown = document.getElementById("startCountdown");
-
-    if (!roomId) {
-        alert("⚠️ 請先輸入房間號碼");
-        return;
-    }
-
-    if (!startTimeValue) {
-        alert("⚠️ 請選擇遊戲開始時間");
-        return;
-    }
-
-    const startTime = new Date(startTimeValue);
-
-    if (startTime.getTime() <= Date.now()) {
-        alert("⚠️ 開始時間必須晚於現在時間");
-        return;
-    }
-
-    try {
-        const response = await fetch("/api/admin/schedule-start", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                roomId: roomId,
-                startTime: startTime.getTime(),
-                autoSeconds: Number(document.getElementById("autoSeconds").value),
-                autoPauseSeconds: Number(document.getElementById("autoPauseSeconds").value)
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            alert("❌ " + data.message);
-            return;
-        }
-
-        alert("✅ 遊戲開始時間設定成功！");
-
-        if (startCountdownTimer) {
-            clearInterval(startCountdownTimer);
-        }
-
-        function updateCountdown() {
-            const remaining = startTime.getTime() - Date.now();
-
-            if (remaining <= 0) {
-                if (startCountdownTimer) {
-                    clearInterval(startCountdownTimer);
-                    startCountdownTimer = null;
-                }
-
-                countdown.innerText = "▶ 遊戲開始！";
-                return;
-            }
-
-            const totalSeconds = Math.ceil(remaining / 1000);
-
-            const days = Math.floor(totalSeconds / 86400);
-            const hours = Math.floor((totalSeconds % 86400) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-
-            countdown.innerText =
-                "🕐 遊戲開始時間：" +
-                startTime.toLocaleString("zh-TW") +
-                "\n⏳ 剩餘：" +
-                days + "天 " +
-                hours + "時 " +
-                minutes + "分 " +
-                seconds + "秒";
-        }
-
-        updateCountdown();
-
-        startCountdownTimer = setInterval(updateCountdown, 1000);
-
-    } catch (error) {
-        alert("❌ 無法設定遊戲開始時間");
-    }
-}
-async function updateRanking() {
-    const roomId = document.getElementById("room").value.trim();
-    if (!roomId) return;
-
-    try {
-        const response = await fetch("/api/room/" + roomId);
-        const data = await response.json();
-
-        if (!data.success) return;
-
-        const players = Object.values(data.room.players || {});
-
-        players.sort((a, b) => {
-            if ((b.bingoLines || 0) !== (a.bingoLines || 0)) {
-                return (b.bingoLines || 0) - (a.bingoLines || 0);
-            }
-            return (b.hitCount || 0) - (a.hitCount || 0);
-        });
-
-        const rankingList = document.getElementById("rankingList");
-
-        if (players.length === 0) {
-            rankingList.innerText = "尚無排名資料";
-            return;
-        }
-
-        rankingList.innerHTML = players.map((player, index) =>
-            (index + 1) + ". " + player.name +
-            "｜已點 " + (player.hitCount || 0) + " 格" +
-            "｜賓果 " + (player.bingoLines || 0) + " 線"
-        ).join("<br>");
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-setInterval(updateRanking, 1000);
-setInterval(updatePlayerCount, 1000);
-</script>
-</body>
-</html>
+setDefaultStartTime();
+</script></body></html>

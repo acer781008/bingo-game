@@ -1,538 +1,310 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>數字賓果｜遊戲室</title>
-
-<style>
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: "Microsoft JhengHei", Arial, sans-serif;
-    background: linear-gradient(135deg, #241052, #54248a);
-    color: white;
-    padding: 20px;
-}
-
-.wrap {
-    width: 100%;
-    max-width: 900px;
-    margin: auto;
-}
-
-.header {
-    background: rgba(20, 15, 55, 0.94);
-    border-radius: 22px;
-    padding: 20px;
-    margin-bottom: 18px;
-    text-align: center;
-}
-
-.header h1 {
-    margin: 0 0 12px;
-    font-size: 32px;
-}
-
-.info {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.info-box {
-    background: rgba(255,255,255,0.10);
-    padding: 10px 18px;
-    border-radius: 12px;
-}
-
-.game-panel {
-    background: rgba(20, 15, 55, 0.94);
-    border-radius: 22px;
-    padding: 20px;
-}
-
-.status {
-    text-align: center;
-    margin-bottom: 18px;
-}
-
-.status-title {
-    color: #ddd;
-    font-size: 15px;
-}
-
-.current-number {
-    font-size: 55px;
-    font-weight: bold;
-    color: #ffd43b;
-    min-height: 70px;
-}
-
-.board {
-    display: grid;
-    grid-template-columns: repeat(var(--cols), 1fr);
-    gap: 8px;
-    max-width: 600px;
-    margin: auto;
-}
-
-.cell {
-    aspect-ratio: 1 / 1;
-    border: none;
-    border-radius: 12px;
-    background: white;
-    color: #251052;
-    font-size: 22px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cell.hit {
-    background: #ffd43b;
-    color: #222;
-    transform: scale(0.95);
-}
-
-.history-box {
-    margin-top: 20px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 15px;
-    padding: 15px;
-}
-
-.history-title {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.history {
-    display: flex;
-    gap: 7px;
-    flex-wrap: wrap;
-}
-
-.history-number {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: white;
-    color: #251052;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-}
-
-.bingo-message {
-    display: none;
-    margin-top: 20px;
-    padding: 18px;
-    border-radius: 15px;
-    text-align: center;
-    font-size: 26px;
-    font-weight: bold;
-    background: #ffd43b;
-    color: #222;
-}
-
-@media (max-width: 600px) {
-
-    body {
-        padding: 10px;
-    }
-
-    .header h1 {
-        font-size: 25px;
-    }
-
-    .game-panel {
-        padding: 12px;
-    }
-
-    .board {
-        gap: 5px;
-    }
-
-    .cell {
-        border-radius: 8px;
-        font-size: 17px;
-    }
-
-    .current-number {
-        font-size: 45px;
-    }
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <title>賓果遊戲室</title>
 </head>
-
 <body>
+<div class="top"><h1>🎰 賓果遊戲（原始版）</h1></div>
 
 <div class="wrap">
-
-    <div class="header">
-
-        <h1>🎯 數字賓果</h1>
-
-        <div class="info">
-
-            <div class="info-box">
-                👤 玩家：
-                <span id="playerName">---</span>
-            </div>
-
-            <div class="info-box">
-                🏠 房間：
-                <span id="roomId">---</span>
-            </div>
-
-            <div class="info-box">
-                🎲 格數：
-                <span id="gameSize">---</span>
-            </div>
-
-        </div>
-
+  <div class="card">
+    <div class="row">
+      <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
+      <button id="voiceBtn">🔊 語音：開</button>
     </div>
+    <div id="gameStatus" class="status">重新連線中…</div>
+    <div id="currentNumber" class="number">-</div>
+  </div>
 
-<div class="game-panel">
+  <div class="card">
+    <div id="board" class="board"></div>
+    <br>
+    <button class="purple" id="copyBtn">📋 複製整張賓果盤</button>
+    <p id="copyHint" class="muted"></p>
+  </div>
 
-    <div class="status">
-
-        <div id="playerCountdown" style="font-size:22px; font-weight:bold; margin-bottom:15px;">
-            等待遊戲開始
-        </div>
-
-        <div class="status-title">
-            🎱 目前開獎號碼
-        </div>
-
-        <div class="current-number" id="currentNumber">
-            -
-        </div>
-
-    </div>
-
-    <div class="board" id="board"></div>
-
-    <div class="bingo-message" id="bingoMessage">
-        🎉 BINGO！
-    </div>
-
-    <button onclick="copyBoard()" class="copy-board-btn">
-        📋 複製賓果盤
-    </button>
-
+  <div class="card">
+    <h2>🏆 即時排行榜</h2>
+    <table class="leader">
+      <thead>
+        <tr>
+          <th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th>
+        </tr>
+      </thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
-
-const playerName = localStorage.getItem("playerName");
-const roomId = localStorage.getItem("roomId");
-const gameSize = Number(localStorage.getItem("gameSize"));
-
-if (!playerName || !roomId || !gameSize) {
-    alert("尚未加入遊戲房間");
-    window.location.href = "/";
-}
-
-document.getElementById("playerName").innerText = playerName;
-document.getElementById("roomId").innerText = roomId;
-document.getElementById("gameSize").innerText = gameSize + " 格";
-
-const board = document.getElementById("board");
-
-let playerNumbers = [];
-let currentDrawnNumber = null;
-
-function createBoard() {
-const cols = Math.sqrt(gameSize);
-board.style.setProperty("--cols", cols);
-
-    board.innerHTML = "";
-
-    playerNumbers = [];
-
-    for (let i = 1; i <= gameSize; i++) {
-        playerNumbers.push(i);
-    }
-
-    shuffle(playerNumbers);
-
-    playerNumbers.forEach(number => {
-
-        const cell = document.createElement("div");
-
-        cell.className = "cell";
-        cell.innerText = number;
-        cell.dataset.number = number;
-cell.onclick = () => {
-    const cellNumber = Number(cell.dataset.number);
-
-    if (cellNumber !== currentDrawnNumber) {
-        return;
-    }
-if (cell.classList.contains("hit")) {
-    return;
-}
-        cell.classList.add("hit");
-
-    const stats = getGameStats();
-
-    if (stats.bingoLines > 0) {
-        document.getElementById("bingoMessage").style.display = "block";
-    }
-
-    socket.emit("addScore", stats);
-};
-
-        board.appendChild(cell);
-
-    });
-}
-function getGameStats() {
-    const cells = Array.from(document.querySelectorAll(".cell"));
-    const side = Math.sqrt(gameSize);
-
-    const marked = cells.map(cell =>
-        cell.classList.contains("hit")
-    );
-
-    const hitCount = marked.filter(Boolean).length;
-    let bingoLines = 0;
-
-    function isHit(row, col) {
-        return marked[row * side + col];
-    }
-
-    // 橫向
-    for (let row = 0; row < side; row++) {
-        let complete = true;
-
-        for (let col = 0; col < side; col++) {
-            if (!isHit(row, col)) {
-                complete = false;
-                break;
-            }
-        }
-
-        if (complete) bingoLines++;
-    }
-
-    // 直向
-    for (let col = 0; col < side; col++) {
-        let complete = true;
-
-        for (let row = 0; row < side; row++) {
-            if (!isHit(row, col)) {
-                complete = false;
-                break;
-            }
-        }
-
-        if (complete) bingoLines++;
-    }
-
-    // 左上到右下
-    let diagonal1 = true;
-
-    for (let i = 0; i < side; i++) {
-        if (!isHit(i, i)) {
-            diagonal1 = false;
-            break;
-        }
-    }
-
-    if (diagonal1) bingoLines++;
-
-    // 右上到左下
-    let diagonal2 = true;
-
-    for (let i = 0; i < side; i++) {
-        if (!isHit(i, side - 1 - i)) {
-            diagonal2 = false;
-            break;
-        }
-    }
-
-    if (diagonal2) bingoLines++;
-
-    return {
-        hitCount: hitCount,
-        bingoLines: bingoLines
-    };
-}
-function shuffle(array) {
-
-    for (let i = array.length - 1; i > 0; i--) {
-
-        const j = Math.floor(Math.random() * (i + 1));
-
-        [array[i], array[j]] = [array[j], array[i]];
-
-    }
-
+const saved = JSON.parse(sessionStorage.getItem("bingoPlayer") || "null");
+if (!saved) {
+  alert("請先從玩家加入頁進入房間");
+  location.href = "/";
+  throw new Error("No player session");
 }
 
 const socket = io();
 
-socket.emit("joinRoom", {
-    roomId: roomId,
-    name: playerName
+const who = document.getElementById("who");
+const roomText = document.getElementById("roomText");
+const voiceBtn = document.getElementById("voiceBtn");
+const gameStatus = document.getElementById("gameStatus");
+const currentNumber = document.getElementById("currentNumber");
+const board = document.getElementById("board");
+const copyBtn = document.getElementById("copyBtn");
+const copyHint = document.getElementById("copyHint");
+const rankBody = document.getElementById("rankBody");
+
+who.textContent = saved.name;
+roomText.textContent = saved.roomId;
+
+let voiceOn = true;
+let current = null;
+let currentToken = 0;
+let countdownTimer = null;
+let boardNumbers = [];
+let hitNumbers = new Set();
+
+function boardStorageKey() {
+  return `bingoBoard:${saved.roomId}:${saved.clientId}`;
+}
+
+function loadBoardState(size) {
+  const raw = sessionStorage.getItem(boardStorageKey());
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      if (data.size === size && Array.isArray(data.numbers)) {
+        boardNumbers = data.numbers;
+        hitNumbers = new Set(data.hits || []);
+        return;
+      }
+    } catch(e) {}
+  }
+
+  boardNumbers = Array.from({length:size}, (_,i)=>i+1);
+  for (let i = boardNumbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [boardNumbers[i], boardNumbers[j]] = [boardNumbers[j], boardNumbers[i]];
+  }
+  hitNumbers = new Set();
+  saveBoardState(size);
+}
+
+function saveBoardState(size) {
+  sessionStorage.setItem(boardStorageKey(), JSON.stringify({
+    size,
+    numbers: boardNumbers,
+    hits: [...hitNumbers]
+  }));
+}
+
+function renderBoard(size) {
+  loadBoardState(size);
+  const side = Math.sqrt(size);
+  board.style.gridTemplateColumns = `repeat(${side},1fr)`;
+  board.innerHTML = "";
+
+  boardNumbers.forEach(n => {
+    const cell = document.createElement("div");
+    cell.className = "cell" + (hitNumbers.has(n) ? " hit" : "");
+    cell.textContent = n;
+    cell.dataset.number = n;
+    cell.addEventListener("click", () => clickCell(cell, n));
+    board.appendChild(cell);
+  });
+}
+
+function stats() {
+  const cells = [...board.children];
+  const side = Math.sqrt(saved.size);
+  const marked = cells.map(c => c.classList.contains("hit"));
+  let lines = 0;
+
+  for (let r=0; r<side; r++) {
+    if (Array.from({length:side}, (_,c)=>marked[r*side+c]).every(Boolean)) lines++;
+  }
+  for (let c=0; c<side; c++) {
+    if (Array.from({length:side}, (_,r)=>marked[r*side+c]).every(Boolean)) lines++;
+  }
+  if (Array.from({length:side}, (_,i)=>marked[i*side+i]).every(Boolean)) lines++;
+  if (Array.from({length:side}, (_,i)=>marked[i*side+(side-1-i)]).every(Boolean)) lines++;
+
+  return {
+    hitCount: marked.filter(Boolean).length,
+    bingoLines: lines
+  };
+}
+
+function clickCell(cell, number) {
+  if (number !== current) return;
+  if (cell.dataset.current !== "1") return;
+  if (cell.classList.contains("hit")) return;
+
+  cell.dataset.current = "0";
+  cell.classList.add("hit");
+  hitNumbers.add(number);
+  saveBoardState(saved.size);
+
+  socket.emit("addScore", {
+    ...stats(),
+    token: currentToken
+  });
+}
+
+function allowCurrent(number) {
+  [...board.children].forEach(c => c.dataset.current = "0");
+  const target = [...board.children].find(c =>
+    Number(c.dataset.number) === number && !c.classList.contains("hit")
+  );
+  if (target) target.dataset.current = "1";
+}
+
+function showCountdown(endAt) {
+  clearInterval(countdownTimer);
+
+  const update = () => {
+    const sec = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    gameStatus.textContent = sec > 0
+      ? `⏳ 遊戲倒數：${sec} 秒`
+      : "▶ 遊戲開始！";
+    if (sec <= 0) clearInterval(countdownTimer);
+  };
+
+  update();
+  countdownTimer = setInterval(update, 250);
+}
+
+function speak(number) {
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(String(number));
+  utterance.lang = "zh-TW";
+  utterance.rate = 0.9;
+  speechSynthesis.speak(utterance);
+}
+
+function renderRanking(list) {
+  rankBody.innerHTML = list.map(p => `
+    <tr>
+      <td>${p.rank < 4 ? ["🥇","🥈","🥉"][p.rank-1] : p.rank}</td>
+      <td>${String(p.name).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]))}</td>
+      <td>${p.hitCount}</td>
+      <td>${p.bingoLines}</td>
+      <td>${p.finishAt ? new Date(p.finishAt).toLocaleTimeString("zh-TW",{hour12:false}) : "—"}</td>
+    </tr>
+  `).join("");
+}
+
+voiceBtn.addEventListener("click", () => {
+  voiceOn = !voiceOn;
+  voiceBtn.textContent = voiceOn ? "🔊 語音：開" : "🔇 語音：關";
+  if (!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+});
+
+copyBtn.addEventListener("click", async () => {
+  const side = Math.sqrt(saved.size);
+  const cell = 70, pad = 20;
+  const canvas = document.createElement("canvas");
+  canvas.width = side * cell + pad * 2;
+  canvas.height = canvas.width + 55;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#fff5f8";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#a23866";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText("我的賓果盤｜房間 " + saved.roomId, pad, 32);
+
+  [...board.children].forEach((c,i) => {
+    const col=i%side, row=Math.floor(i/side);
+    const x=pad+col*cell, y=50+row*cell;
+    ctx.fillStyle = c.classList.contains("hit") ? "#ff5d9e" : "#fff";
+    ctx.fillRect(x+3,y+3,cell-6,cell-6);
+    ctx.strokeStyle="#efbfd0";
+    ctx.strokeRect(x+3,y+3,cell-6,cell-6);
+    ctx.fillStyle=c.classList.contains("hit") ? "#fff" : "#49323d";
+    ctx.font="bold 21px sans-serif";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(c.textContent,x+cell/2,y+cell/2);
+  });
+
+  try {
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+    copyHint.textContent = "✅ 已複製整張賓果盤圖片";
+  } catch(e) {
+    copyHint.textContent = "此瀏覽器不支援直接複製圖片";
+  }
 });
 
 socket.on("joinError", message => {
-
-    alert("❌ " + message);
-
-    window.location.href = "/";
-
+  alert("❌ " + message);
+  location.href = "/";
 });
 
 socket.on("joinSuccess", data => {
+  saved.size = data.size;
+  sessionStorage.setItem("bingoPlayer", JSON.stringify(saved));
+  renderBoard(data.size);
 
-    if (Number(data.size) !== gameSize) {
-        localStorage.setItem("gameSize", data.size);
-        location.reload();
-        return;
+  if (data.phase === "waiting") {
+    gameStatus.textContent = "等待開賽時間";
+  } else if (data.phase === "countdown" && data.countdownEndsAt) {
+    showCountdown(data.countdownEndsAt);
+  } else if (data.phase === "playing") {
+    gameStatus.textContent = "▶ 遊戲進行中";
+    if (data.currentNumber) {
+      current = data.currentNumber;
+      currentToken = data.drawToken || 0;
+      currentNumber.textContent = data.currentNumber;
+      allowCurrent(data.currentNumber);
     }
-
-    if (data.scheduledStartAt) {
-        startPlayerCountdown(data.scheduledStartAt);
-    } else {
-        document.getElementById("playerCountdown").innerText = "等待管理員設定開始時間";
-    }
-
+  }
 });
-socket.on("playersUpdate", data => {
-    const list = document.getElementById("playerList");
-    const count = document.getElementById("playerCount");
 
-    if (!list || !count) return;
-
-    count.innerText = data.count;
-
-    list.innerHTML = "";
-
-    data.players.forEach((player, index) => {
-        const item = document.createElement("div");
-
-        let rankIcon = (index + 1) + ".";
-
-if (index === 0) rankIcon = "🥇";
-if (index === 1) rankIcon = "🥈";
-if (index === 2) rankIcon = "🥉";
-
-item.innerText =
-    rankIcon + " " + player.name +
-    "｜已點 " + (player.hitCount || 0) + " 格" +
-    "｜賓果 " + (player.bingoLines || 0) + " 線";
-
-        list.appendChild(item);
-    });
-});
-socket.on("numberDrawn", data => {
-
-    const number = Number(data.number);
-currentDrawnNumber = number;
-
-    document.getElementById("currentNumber").innerText = number;
-
-});
-let playerStartCountdownTimer = null;
-
-function startPlayerCountdown(startTimeValue) {
-    const countdown = document.getElementById("playerCountdown");
-    const startTime = new Date(Number(startTimeValue));
-
-    if (playerStartCountdownTimer) {
-        clearInterval(playerStartCountdownTimer);
-    }
-
-    function updatePlayerCountdown() {
-        const remaining = startTime.getTime() - Date.now();
-
-        if (remaining <= 0) {
-            if (playerStartCountdownTimer) {
-                clearInterval(playerStartCountdownTimer);
-                playerStartCountdownTimer = null;
-            }
-
-            countdown.innerText = "▶ 遊戲開始！";
-            return;
-        }
-
-        const totalSeconds = Math.ceil(remaining / 1000);
-
-        const days = Math.floor(totalSeconds / 86400);
-        const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        countdown.innerText =
-            "🕐 遊戲開始時間：" +
-            startTime.toLocaleString("zh-TW") +
-            "\n⏳ 剩餘：" +
-            days + "天 " +
-            hours + "時 " +
-            minutes + "分 " +
-            seconds + "秒";
-    }
-
-    updatePlayerCountdown();
-
-    playerStartCountdownTimer =
-        setInterval(updatePlayerCountdown, 1000);
-}
-
-socket.on("gameScheduled", data => {
-    startPlayerCountdown(data.startTime);
+socket.on("countdownStarted", data => {
+  showCountdown(data.countdownEndsAt);
 });
 
 socket.on("gameStarted", () => {
-    const countdown = document.getElementById("playerCountdown");
-    countdown.innerText = "▶ 遊戲開始！";
+  gameStatus.textContent = "▶ 遊戲進行中";
 });
-socket.on("gameEnded", () => {
-    currentDrawnNumber = null;
-    alert("🏁 遊戲結束！");
+
+socket.on("numberDrawn", data => {
+  current = data.number;
+  currentToken = data.token;
+  currentNumber.textContent = data.number;
+  allowCurrent(data.number);
+  speak(data.number);
 });
-createBoard();
-function copyBoard() {
-    const side = Math.sqrt(gameSize);
-    let text = "🎯 我的賓果盤\n";
 
-    for (let i = 0; i < playerNumbers.length; i += side) {
-        text += playerNumbers.slice(i, i + side).join("　") + "\n";
-    }
+socket.on("rankingUpdate", renderRanking);
 
-    navigator.clipboard.writeText(text)
-        .then(() => {
-            alert("✅ 賓果盤已複製！");
-        })
-        .catch(() => {
-            alert("❌ 複製失敗");
-        });
-}
+socket.on("gameEnded", data => {
+  current = null;
+  [...board.children].forEach(c => c.dataset.current = "0");
+  currentNumber.textContent = "-";
+  gameStatus.textContent = "🏁 遊戲結束";
+  if (data.ranking) renderRanking(data.ranking);
+});
+
+socket.on("connect", () => {
+  socket.emit("joinRoom", {
+    roomId: saved.roomId,
+    name: saved.name,
+    password: saved.password,
+    clientId: saved.clientId
+  });
+});
 </script>
-
-<!-- 已加入玩家 -->
-<div style="margin-top:20px; padding:15px; background:rgba(255,255,255,0.08); border-radius:15px;">
-    <h3>👥 已加入連線玩家：<span id="playerCount">0</span> 人</h3>
-    <div id="playerList"></div>
-</div>
-
-</div>
-
 </body>
 </html>

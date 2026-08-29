@@ -1,170 +1,107 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數字賓果賓果</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background: linear-gradient(135deg, #241052, #5421a8, #1769c2);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .box {
-            width: 90%;
-            max-width: 500px;
-            background: rgba(20, 15, 55, 0.92);
-            padding: 35px;
-            border-radius: 25px;
-            text-align: center;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.35);
-        }
-
-        h1 {
-            font-size: 38px;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #ddd;
-            margin-bottom: 30px;
-        }
-
-        input {
-            width: 100%;
-            padding: 15px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-        }
-
-        button {
-            width: 100%;
-            padding: 16px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .join-btn {
-            background: #ffd43b;
-            color: #25134f;
-        }
-
-        .admin-btn {
-            background: #7c4dff;
-            color: white;
-        }
-
-        button:hover {
-            transform: scale(1.02);
-        }
-
-        .note {
-            margin-top: 22px;
-            font-size: 14px;
-            color: #ccc;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <title>賓果遊戲</title>
 </head>
-
 <body>
+<div class="top"><h1>🎰 賓果遊戲（原始版）</h1></div>
 
-<div class="box">
+<div class="wrap">
+  <div class="card login">
+    <h2>加入遊戲</h2>
 
-    <h1>🎯 數字賓果賓果</h1>
+    <label>玩家名稱</label>
+    <input id="playerName" autocomplete="off" placeholder="請輸入玩家名稱">
 
-    <div class="subtitle">
-        多人即時連線 Bingo
-    </div>
+    <br><br>
 
-    <input
-        id="name"
-        type="text"
-        placeholder="請輸入玩家名稱"
-    >
+    <label>房間號碼</label>
+    <input id="roomId" autocomplete="off" placeholder="管理員提供的房間號碼">
 
-    <input
-        id="room"
-        type="text"
-        placeholder="請輸入房間號碼"
-    >
+    <br><br>
 
-   <button class="join-btn" onclick="joinGame()">
-        🚀 加入遊戲
-    </button>
+    <label>房間密碼</label>
+    <input id="playerPassword" type="password" placeholder="管理員提供的房間密碼">
 
-  
-    <div class="note">
-        遊戲格數由主控室統一設定
-    </div>
+    <br><br>
 
+    <button id="joinBtn">🚀 加入遊戲</button>
+    <p id="joinStatus" class="muted">等待連線…</p>
+  </div>
 </div>
 
-</body><script src="/socket.io/socket.io.js"></script>
-
+<script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-const params = new URLSearchParams(window.location.search);
-const roomFromUrl = params.get("room");
 
-if (roomFromUrl) {
-    document.getElementById("room").value = roomFromUrl;
-}
-function joinGame() {
+const playerName = document.getElementById("playerName");
+const roomId = document.getElementById("roomId");
+const playerPassword = document.getElementById("playerPassword");
+const joinBtn = document.getElementById("joinBtn");
+const joinStatus = document.getElementById("joinStatus");
 
-    const name = document.getElementById("name").value.trim();
-    const roomId = document.getElementById("room").value.trim();
-
-    if (!name) {
-        alert("請輸入玩家名稱");
-        return;
-    }
-
-    if (!roomId) {
-        alert("請輸入房間號碼");
-        return;
-    }
-
-    socket.emit("joinRoom", {
-        roomId: roomId,
-        name: name
-    });
+function getClientId() {
+  let id = sessionStorage.getItem("bingoClientId");
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random());
+    sessionStorage.setItem("bingoClientId", id);
+  }
+  return id;
 }
 
-socket.on("joinError", (message) => {
-    alert("❌ " + message);
+const params = new URLSearchParams(location.search);
+if (params.get("room")) roomId.value = params.get("room");
+
+socket.on("connect", () => {
+  joinStatus.textContent = "✅ 已連線，可以加入房間。";
+  joinBtn.disabled = false;
 });
 
-socket.on("joinSuccess", (data) => {
+socket.on("connect_error", () => {
+  joinStatus.textContent = "❌ 無法連到遊戲主機。";
+  joinBtn.disabled = false;
+});
 
-    localStorage.setItem("playerName",
-        document.getElementById("name").value.trim());
+joinBtn.addEventListener("click", () => {
+  const name = playerName.value.trim();
+  const room = roomId.value.trim();
+  const password = playerPassword.value;
 
-    localStorage.setItem("roomId", data.roomId);
+  if (!name) return alert("❌ 請輸入玩家名稱");
+  if (!room) return alert("❌ 請輸入房間號碼");
+  if (!password) return alert("❌ 請輸入房間密碼");
 
-    localStorage.setItem("gameSize", data.size);
+  joinBtn.disabled = true;
+  joinStatus.textContent = "正在加入房間…";
 
-    alert(
-        "✅ 加入成功！\n" +
-        "房間：" + data.roomId + "\n" +
-        "遊戲格數：" + data.size + " 格"
-    );window.location.href = "/game.html";
+  socket.emit("joinRoom", {
+    roomId: room,
+    name,
+    password,
+    clientId: getClientId()
+  });
+});
+
+socket.on("joinError", message => {
+  joinBtn.disabled = false;
+  joinStatus.textContent = "❌ " + message;
+  alert("❌ " + message);
+});
+
+socket.on("joinSuccess", data => {
+  sessionStorage.setItem("bingoPlayer", JSON.stringify({
+    clientId: getClientId(),
+    name: playerName.value.trim(),
+    roomId: data.roomId,
+    password: playerPassword.value,
+    size: data.size
+  }));
+
+  location.href = "/game.html";
 });
 </script>
+</body>
 </html>
