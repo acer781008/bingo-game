@@ -54,3 +54,43 @@
 /* 香港傳統麻將素材版 */
 .mahjong-preview img{width:48px;height:62px;object-fit:contain;display:block;margin:auto}
 .mahjong-preview small{display:block;margin-top:3px;font-size:11px}
+
+/* V20.1 麻將版：手機/電腦已點擊狀態強化 */
+#board .cell.hit{
+  position:relative;
+  background:#e83e86 !important;
+  border-color:#c82669 !important;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.28);
+}
+#board .cell.hit img{
+  opacity:.42;
+  filter:saturate(.65) brightness(.92);
+}
+#board .cell.hit::after{
+  content:"✓";
+  position:absolute;
+  top:5px;
+  right:7px;
+  width:25px;
+  height:25px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:rgba(154,24,79,.92);
+  color:#fff;
+  font-size:19px;
+  font-weight:900;
+  line-height:1;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);
+  pointer-events:none;
+}
+@media (max-width:600px){
+  #board .cell.hit::after{
+    top:4px;
+    right:5px;
+    width:22px;
+    height:22px;
+    font-size:17px;
+  }
+}
