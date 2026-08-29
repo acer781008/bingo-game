@@ -108,6 +108,12 @@ function finishGame(room) {
 function drawNext(room) {
   if (!room || room.phase !== "playing") return;
 
+  // 若本期叫號已有人達成完成條件，先讓同一期的其他玩家完成回報，
+  // 到下一次叫號時間點再統一結束，避免網路快慢決定勝負。
+  if (room.winningToken && room.winningToken === room.drawToken) {
+    return finishGame(room);
+  }
+
   const remaining = [];
   for (let n = 1; n <= room.size; n++) {
     if (!room.drawn.includes(n)) remaining.push(n);
@@ -217,6 +223,8 @@ app.post("/api/admin/create-room", (req, res) => {
     drawIntervalMs,
     note,
     targetLines,
+    winningToken: null,
+    winningAt: null,
     phase: "waiting",
     countdownEndsAt: null,
     gameEndsAt: null,
@@ -360,10 +368,21 @@ io.on("connection", socket => {
     const newHits = Math.max(player.hitCount, Number(hitCount) || 0);
     const newLines = Math.max(player.bingoLines, Number(bingoLines) || 0);
 
-    const side = Math.sqrt(room.size);
-    const requiredLines = room.targetLines === 99 ? (side * 2 + 2) : room.targetLines;
-    if (newLines >= requiredLines && !player.finishAt) {
-      player.finishAt = Date.now();
+    // 完成條件：1/2/3/5 代表 Bingo 線數；99 代表整張盤面全部點完。
+    const completed = room.targetLines === 99
+      ? newHits >= room.size
+      : newLines >= room.targetLines;
+
+    if (completed && !player.finishAt) {
+      // 同一個叫號期間達標者使用相同完成時間，視為共同完成，
+      // 不讓 Socket 回報速度影響名次。
+      if (!room.winningToken) {
+        room.winningToken = room.drawToken;
+        room.winningAt = Date.now();
+      }
+      if (room.winningToken === room.drawToken) {
+        player.finishAt = room.winningAt;
+      }
     }
 
     player.hitCount = newHits;
