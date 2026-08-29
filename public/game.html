@@ -13,8 +13,9 @@
   <div class="card">
     <div class="row">
       <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
-      <button id="voiceBtn">🔊 語音：開</button>
+      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報。</div>
     </div>
+    <div id="startTimeText" class="muted" style="margin-top:8px;font-weight:700">🕐 開賽時間：讀取中…</div>
     <div id="gameStatus" class="status">重新連線中…</div>
     <div id="currentNumber" class="number">-</div>
   </div>
@@ -53,6 +54,7 @@ const socket = io();
 const who = document.getElementById("who");
 const roomText = document.getElementById("roomText");
 const voiceBtn = document.getElementById("voiceBtn");
+const startTimeText = document.getElementById("startTimeText");
 const gameStatus = document.getElementById("gameStatus");
 const currentNumber = document.getElementById("currentNumber");
 const board = document.getElementById("board");
@@ -63,7 +65,8 @@ const rankBody = document.getElementById("rankBody");
 who.textContent = saved.name;
 roomText.textContent = saved.roomId;
 
-let voiceOn = true;
+let voiceOn = false;
+let voiceUnlocked = false;
 let current = null;
 let currentToken = 0;
 let countdownTimer = null;
@@ -204,9 +207,26 @@ function renderRanking(list) {
 }
 
 voiceBtn.addEventListener("click", () => {
+  if (!("speechSynthesis" in window)) {
+    alert("這個瀏覽器不支援語音播報");
+    return;
+  }
+
+  if (!voiceUnlocked) {
+    voiceUnlocked = true;
+    voiceOn = true;
+    speechSynthesis.cancel();
+    const test = new SpeechSynthesisUtterance("語音已開啟");
+    test.lang = "zh-TW";
+    test.rate = 0.9;
+    speechSynthesis.speak(test);
+    voiceBtn.textContent = "🔊 語音：開";
+    return;
+  }
+
   voiceOn = !voiceOn;
   voiceBtn.textContent = voiceOn ? "🔊 語音：開" : "🔇 語音：關";
-  if (!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+  if (!voiceOn) speechSynthesis.cancel();
 });
 
 copyBtn.addEventListener("click", async () => {
@@ -253,6 +273,15 @@ socket.on("joinError", message => {
 
 socket.on("joinSuccess", data => {
   saved.size = data.size;
+  if (data.scheduledAt) {
+    const start = new Date(data.scheduledAt);
+    startTimeText.textContent = "🕐 開賽時間：" + start.toLocaleString("zh-TW", {
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", hour12:false
+    });
+  } else {
+    startTimeText.textContent = "🕐 開賽時間：—";
+  }
   sessionStorage.setItem("bingoPlayer", JSON.stringify(saved));
   renderBoard(data.size);
 
