@@ -13,7 +13,7 @@
   <div class="card">
     <div class="row">
       <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
-      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報；LINE 等內建瀏覽器若不支援，請改用 Chrome / Safari 開啟。</div>
+      <button id="voiceBtn">🔊 開啟叫號聲音</button><div class="muted" style="font-size:13px;margin-top:6px">進入遊戲後請先點一次。開啟後，每次自動叫號都會播放網站內建號碼音檔；LINE 內建瀏覽器也可直接嘗試。</div>
     </div>
     <div id="startTimeText" class="muted" style="margin-top:8px;font-weight:700">🕐 開賽時間：讀取中…</div>
     <div id="goalText" class="muted" style="margin-top:4px;font-weight:700">🏆 完成條件：讀取中…</div>
@@ -69,6 +69,9 @@ roomText.textContent = saved.roomId;
 
 let voiceOn = false;
 let voiceUnlocked = false;
+const callAudio = new Audio();
+callAudio.preload = "auto";
+let audioWarmStarted = false;
 let current = null;
 let currentToken = 0;
 let countdownTimer = null;
@@ -185,13 +188,31 @@ function showCountdown(endAt) {
   countdownTimer = setInterval(update, 250);
 }
 
-function speak(number) {
-  if (!voiceOn || !("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(String(number));
-  utterance.lang = "zh-TW";
-  utterance.rate = 0.9;
-  speechSynthesis.speak(utterance);
+async function warmAudioCache() {
+  if (audioWarmStarted) return;
+  audioWarmStarted = true;
+  // 號碼檔案很小，背景預載可降低正式叫號時的等待。
+  for (let start = 1; start <= 64; start += 8) {
+    const jobs = [];
+    for (let n = start; n < start + 8 && n <= 64; n++) {
+      jobs.push(fetch(`/audio/${n}.mp3`, {cache:"force-cache"}).catch(()=>null));
+    }
+    await Promise.all(jobs);
+  }
+}
+
+async function playCall(number) {
+  if (!voiceOn || !voiceUnlocked) return;
+  try {
+    callAudio.pause();
+    callAudio.src = `/audio/${number}.mp3`;
+    callAudio.currentTime = 0;
+    await callAudio.play();
+  } catch (e) {
+    voiceOn = false;
+    voiceBtn.textContent = "🔇 聲音未啟用";
+    alert("手機目前阻擋自動播放。請再點一次『開啟叫號聲音』；若 LINE 內建瀏覽器仍無法播放，再改用 Chrome / Safari 開啟。 ");
+  }
 }
 
 function renderRanking(list) {
@@ -208,27 +229,28 @@ function renderRanking(list) {
   `).join("");
 }
 
-voiceBtn.addEventListener("click", () => {
-  if (!("speechSynthesis" in window)) {
-    alert("目前這個內建瀏覽器不支援語音播報。請點右上角選單，改用 Chrome 或 Safari 開啟遊戲網址後，再按一次『點我開啟語音』。");
+voiceBtn.addEventListener("click", async () => {
+  if (!voiceUnlocked || !voiceOn) {
+    try {
+      callAudio.pause();
+      callAudio.src = "/audio/ready.mp3";
+      callAudio.currentTime = 0;
+      await callAudio.play();
+      voiceUnlocked = true;
+      voiceOn = true;
+      voiceBtn.textContent = "✅ 叫號聲音已開啟";
+      warmAudioCache();
+    } catch (e) {
+      voiceUnlocked = false;
+      voiceOn = false;
+      alert("目前瀏覽器沒有允許播放聲音。請確認手機媒體音量已開啟後再按一次；如果 LINE 內建瀏覽器仍無法播放，再改用 Chrome / Safari。");
+    }
     return;
   }
 
-  if (!voiceUnlocked) {
-    voiceUnlocked = true;
-    voiceOn = true;
-    speechSynthesis.cancel();
-    const test = new SpeechSynthesisUtterance("語音已開啟");
-    test.lang = "zh-TW";
-    test.rate = 0.9;
-    speechSynthesis.speak(test);
-    voiceBtn.textContent = "🔊 語音：開";
-    return;
-  }
-
-  voiceOn = !voiceOn;
-  voiceBtn.textContent = voiceOn ? "🔊 語音：開" : "🔇 語音：關";
-  if (!voiceOn) speechSynthesis.cancel();
+  voiceOn = false;
+  callAudio.pause();
+  voiceBtn.textContent = "🔇 叫號聲音：關";
 });
 
 copyBtn.addEventListener("click", async () => {
@@ -316,7 +338,7 @@ socket.on("numberDrawn", data => {
   currentToken = data.token;
   currentNumber.textContent = data.number;
   allowCurrent(data.number);
-  speak(data.number);
+  playCall(data.number);
 });
 
 socket.on("rankingUpdate", renderRanking);
