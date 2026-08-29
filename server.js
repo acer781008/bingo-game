@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const { Server } = require("socket.io");
 
@@ -14,6 +15,20 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const adminSessions = new Set();
 const rooms = new Map();
 const timers = new Map();
+
+let callDurations = {};
+try {
+  callDurations = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "public", "audio", "durations.json"), "utf8")
+  );
+} catch (err) {
+  console.warn("Unable to load audio durations; using fallback timing.");
+}
+
+function callAudioMs(number) {
+  const ms = Number(callDurations[String(number)]);
+  return Number.isFinite(ms) && ms > 0 ? ms : 1800;
+}
 
 app.use(express.json());
 
@@ -141,10 +156,22 @@ function startGame(room) {
     gameEndsAt: room.gameEndsAt
   });
 
-  drawNext(room);
-
   const t = getTimers(room.id);
-  t.draw = setInterval(() => drawNext(room), room.drawIntervalMs);
+
+  function scheduleNextDraw() {
+    if (!room || room.phase !== "playing") return;
+    const spokenNumber = room.currentNumber;
+    const delay = callAudioMs(spokenNumber) + room.drawIntervalMs;
+    clearTimeout(t.draw);
+    t.draw = setTimeout(() => {
+      if (!room || room.phase !== "playing") return;
+      drawNext(room);
+      if (room.phase === "playing") scheduleNextDraw();
+    }, delay);
+  }
+
+  drawNext(room);
+  if (room.phase === "playing") scheduleNextDraw();
   t.end = setTimeout(() => finishGame(room), room.gameSeconds * 1000);
 }
 
