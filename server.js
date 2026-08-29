@@ -170,6 +170,7 @@ app.post("/api/admin/create-room", (req, res) => {
   const countdownSeconds = Number(req.body.countdownSeconds);
   const gameSeconds = Number(req.body.gameSeconds);
   const drawIntervalMs = Number(req.body.drawIntervalMs);
+  const note = String(req.body.note || "").trim();
 
   if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
   if (!playerPassword) return res.status(400).json({ success: false, message: "請輸入房間密碼" });
@@ -196,6 +197,7 @@ app.post("/api/admin/create-room", (req, res) => {
     countdownSeconds,
     gameSeconds,
     drawIntervalMs,
+    note,
     phase: "waiting",
     countdownEndsAt: null,
     gameEndsAt: null,
