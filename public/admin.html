@@ -4,7 +4,7 @@
     <br><br>
 <button onclick="createRoom()">建立房間</button></div><div id="ctl" class="hidden"><div class="card"><div class="row"><div><label>房間</label><b id="show"></b></div><div><label>玩家網址</label><input id="url" readonly>
       <div id="shareInfo" style="margin-top:14px;padding:14px;border:1px solid #efd4df;border-radius:14px;white-space:pre-line;line-height:1.8;background:#fff8fb"></div>
-      <br></div><div><button class="purple" onclick="copyUrl()">複製玩家網址</button></div></div><div id="st" class="status">等待建立房間</div><div class="row" style="margin:12px 0"><b id="playerCount">👥 目前玩家：0 人</b><div><button onclick="endRoom()">⏹️ 立即結束遊戲</button> <button class="purple" onclick="deleteRoom()">🗑️ 刪除房間</button></div></div><div id="num" class="number">-</div></div><div class="card"><div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">📋 複製排行榜</button></div><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table></div></div></div><script src="/socket.io/socket.io.js"></script><script>
+      <br></div><div><button class="purple" onclick="copyUrl()">複製玩家網址</button></div></div><div id="st" class="status">等待建立房間</div><div class="row" style="margin:12px 0"><b id="playerCount">👥 目前玩家：0 人</b><div><button onclick="endRoom()">⏹️ 立即結束遊戲</button> <button class="purple" onclick="deleteRoom()">🗑️ 刪除房間</button></div></div><div id="num" class="number">-</div></div><div class="card"><div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">🖼️ 複製整頁排行榜</button></div><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table></div></div></div><script src="/socket.io/socket.io.js"></script><script>
 const socket = io();
 const $ = (id) => document.getElementById(id);
 
@@ -151,12 +151,77 @@ function copyUrl() {
     .then(() => alert("✅ 已複製玩家資訊"));
 }
 
-function copyRank() {
-  const text = [...el.rankBody.querySelectorAll("tr")]
-    .map(tr => [...tr.children].map(td => td.innerText).join("｜"))
-    .join("\n");
-  navigator.clipboard.writeText("🏆 賓果排行榜\n" + text)
-    .then(() => alert("✅ 已複製排行榜"));
+async function copyRank() {
+  const rows = [...el.rankBody.querySelectorAll("tr")].map(tr =>
+    [...tr.children].map(td => td.innerText.trim())
+  );
+  if (!rows.length) return alert("目前還沒有排行榜資料");
+
+  const width = 1100;
+  const margin = 46;
+  const headerH = 190;
+  const rowH = 58;
+  const tableHeadH = 64;
+  const height = headerH + tableHeadH + rows.length * rowH + 55;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#fff8fb";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#7b294d";
+  ctx.font = "bold 40px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("🏆 賓果排行榜", width / 2, 58);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#333";
+  ctx.font = "24px sans-serif";
+  ctx.fillText("🏠 房間：" + (activeRoom || "—"), margin, 105);
+  const shareLines = (el.shareInfo?.textContent || "").split("\n");
+  const startLine = shareLines.find(x => x.includes("遊戲開始時間")) || "🕐 遊戲開始時間：—";
+  const targetLine = shareLines.find(x => x.includes("完成條件")) || "🏆 完成條件：—";
+  ctx.fillText(startLine, margin, 140);
+  ctx.fillText(targetLine, margin, 175);
+
+  const cols = [margin, 155, 520, 710, 875];
+  const labels = ["排名", "玩家", "點擊格數", "賓果線", "完成時間"];
+  const tableTop = headerH;
+  ctx.fillStyle = "#f3dce6";
+  ctx.fillRect(margin, tableTop, width - margin * 2, tableHeadH);
+  ctx.fillStyle = "#5b2440";
+  ctx.font = "bold 23px sans-serif";
+  labels.forEach((x,i) => ctx.fillText(x, cols[i], tableTop + 41));
+
+  ctx.font = "22px sans-serif";
+  rows.forEach((row, r) => {
+    const y = tableTop + tableHeadH + r * rowH;
+    ctx.fillStyle = r % 2 ? "#fff" : "#fffafb";
+    ctx.fillRect(margin, y, width - margin * 2, rowH);
+    ctx.fillStyle = "#222";
+    row.forEach((x,i) => ctx.fillText(x, cols[i], y + 37));
+    ctx.strokeStyle = "#ead5df";
+    ctx.beginPath(); ctx.moveTo(margin, y + rowH); ctx.lineTo(width - margin, y + rowH); ctx.stroke();
+  });
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return alert("❌ 無法產生排行榜圖片");
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]);
+      alert("✅ 已複製完整排行榜圖片，可以直接貼到 LINE");
+      return;
+    }
+  } catch (e) {}
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `賓果排行榜-${activeRoom || "room"}.png`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  alert("此瀏覽器不支援直接複製圖片，已改為下載完整排行榜圖片");
 }
 
 function phaseText(phase) {

@@ -13,7 +13,7 @@
   <div class="card">
     <div class="row">
       <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
-      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報。</div>
+      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報；LINE 等內建瀏覽器若不支援，請改用 Chrome / Safari 開啟。</div>
     </div>
     <div id="startTimeText" class="muted" style="margin-top:8px;font-weight:700">🕐 開賽時間：讀取中…</div>
     <div id="goalText" class="muted" style="margin-top:4px;font-weight:700">🏆 完成條件：讀取中…</div>
@@ -210,7 +210,7 @@ function renderRanking(list) {
 
 voiceBtn.addEventListener("click", () => {
   if (!("speechSynthesis" in window)) {
-    alert("這個瀏覽器不支援語音播報");
+    alert("目前這個內建瀏覽器不支援語音播報。請點右上角選單，改用 Chrome 或 Safari 開啟遊戲網址後，再按一次『點我開啟語音』。");
     return;
   }
 
