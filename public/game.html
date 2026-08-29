@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <title>賓果遊戲室</title>
+</head>
+<body>
+<div class="top"><h1>🎰 賓果遊戲（原始版）</h1></div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
+      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報；LINE 等內建瀏覽器若不支援，請改用 Chrome / Safari 開啟。</div>
+    </div>
+    <div id="startTimeText" class="muted" style="margin-top:8px;font-weight:700">🕐 開賽時間：讀取中…</div>
+    <div id="goalText" class="muted" style="margin-top:4px;font-weight:700">🏆 完成條件：讀取中…</div>
+    <div id="gameStatus" class="status">重新連線中…</div>
+    <div id="currentNumber" class="number">-</div>
+  </div>
+
+  <div class="card">
+    <div id="board" class="board"></div>
+    <br>
+    <button class="purple" id="copyBtn">📋 複製整張賓果盤</button>
+    <p id="copyHint" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h2>🏆 即時排行榜</h2>
+    <table class="leader">
+      <thead>
+        <tr>
+          <th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th>
+        </tr>
+      </thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const saved = JSON.parse(sessionStorage.getItem("bingoPlayer") || "null");
+if (!saved) {
+  alert("請先從玩家加入頁進入房間");
+  location.href = "/";
+  throw new Error("No player session");
+}
+
+const socket = io();
+
+const who = document.getElementById("who");
+const roomText = document.getElementById("roomText");
+const voiceBtn = document.getElementById("voiceBtn");
+const startTimeText = document.getElementById("startTimeText");
+const goalText = document.getElementById("goalText");
+const gameStatus = document.getElementById("gameStatus");
+const currentNumber = document.getElementById("currentNumber");
+const board = document.getElementById("board");
+const copyBtn = document.getElementById("copyBtn");
+const copyHint = document.getElementById("copyHint");
+const rankBody = document.getElementById("rankBody");
+
+who.textContent = saved.name;
+roomText.textContent = saved.roomId;
+
+let voiceOn = false;
+let voiceUnlocked = false;
+let current = null;
+let currentToken = 0;
+let countdownTimer = null;
+let boardNumbers = [];
+let hitNumbers = new Set();
+
+function boardStorageKey() {
+  return `bingoBoard:${saved.roomId}:${saved.clientId}`;
+}
+
+function loadBoardState(size) {
+  const raw = sessionStorage.getItem(boardStorageKey());
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      if (data.size === size && Array.isArray(data.numbers)) {
+        boardNumbers = data.numbers;
+        hitNumbers = new Set(data.hits || []);
+        return;
+      }
+    } catch(e) {}
+  }
+
+  boardNumbers = Array.from({length:size}, (_,i)=>i+1);
+  for (let i = boardNumbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [boardNumbers[i], boardNumbers[j]] = [boardNumbers[j], boardNumbers[i]];
+  }
+  hitNumbers = new Set();
+  saveBoardState(size);
+}
+
+function saveBoardState(size) {
+  sessionStorage.setItem(boardStorageKey(), JSON.stringify({
+    size,
+    numbers: boardNumbers,
+    hits: [...hitNumbers]
+  }));
+}
+
+function renderBoard(size) {
+  loadBoardState(size);
+  const side = Math.sqrt(size);
+  board.style.gridTemplateColumns = `repeat(${side},1fr)`;
+  board.innerHTML = "";
+
+  boardNumbers.forEach(n => {
+    const cell = document.createElement("div");
+    cell.className = "cell" + (hitNumbers.has(n) ? " hit" : "");
+    cell.textContent = n;
+    cell.dataset.number = n;
+    cell.addEventListener("click", () => clickCell(cell, n));
+    board.appendChild(cell);
+  });
+}
+
+function stats() {
+  const cells = [...board.children];
+  const side = Math.sqrt(saved.size);
+  const marked = cells.map(c => c.classList.contains("hit"));
+  let lines = 0;
+
+  for (let r=0; r<side; r++) {
+    if (Array.from({length:side}, (_,c)=>marked[r*side+c]).every(Boolean)) lines++;
+  }
+  for (let c=0; c<side; c++) {
+    if (Array.from({length:side}, (_,r)=>marked[r*side+c]).every(Boolean)) lines++;
+  }
+  if (Array.from({length:side}, (_,i)=>marked[i*side+i]).every(Boolean)) lines++;
+  if (Array.from({length:side}, (_,i)=>marked[i*side+(side-1-i)]).every(Boolean)) lines++;
+
+  return {
+    hitCount: marked.filter(Boolean).length,
+    bingoLines: lines
+  };
+}
+
+function clickCell(cell, number) {
+  if (number !== current) return;
+  if (cell.dataset.current !== "1") return;
+  if (cell.classList.contains("hit")) return;
+
+  cell.dataset.current = "0";
+  cell.classList.add("hit");
+  hitNumbers.add(number);
+  saveBoardState(saved.size);
+
+  socket.emit("addScore", {
+    ...stats(),
+    token: currentToken
+  });
+}
+
+function allowCurrent(number) {
+  [...board.children].forEach(c => c.dataset.current = "0");
+  const target = [...board.children].find(c =>
+    Number(c.dataset.number) === number && !c.classList.contains("hit")
+  );
+  if (target) target.dataset.current = "1";
+}
+
+function showCountdown(endAt) {
+  clearInterval(countdownTimer);
+
+  const update = () => {
+    const sec = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    gameStatus.textContent = sec > 0
+      ? `⏳ 遊戲倒數：${sec} 秒`
+      : "▶ 遊戲開始！";
+    if (sec <= 0) clearInterval(countdownTimer);
+  };
+
+  update();
+  countdownTimer = setInterval(update, 250);
+}
+
+function speak(number) {
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(String(number));
+  utterance.lang = "zh-TW";
+  utterance.rate = 0.9;
+  speechSynthesis.speak(utterance);
+}
+
+function renderRanking(list) {
+  rankBody.innerHTML = list.map(p => `
+    <tr>
+      <td>${p.rank < 4 ? ["🥇","🥈","🥉"][p.rank-1] : p.rank}</td>
+      <td>${String(p.name).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]))}</td>
+      <td>${p.hitCount}</td>
+      <td>${p.bingoLines}</td>
+      <td>${p.finishAt ? new Date(p.finishAt).toLocaleTimeString("zh-TW",{hour12:false}) : "—"}</td>
+    </tr>
+  `).join("");
+}
+
+voiceBtn.addEventListener("click", () => {
+  if (!("speechSynthesis" in window)) {
+    alert("目前這個內建瀏覽器不支援語音播報。請點右上角選單，改用 Chrome 或 Safari 開啟遊戲網址後，再按一次『點我開啟語音』。");
+    return;
+  }
+
+  if (!voiceUnlocked) {
+    voiceUnlocked = true;
+    voiceOn = true;
+    speechSynthesis.cancel();
+    const test = new SpeechSynthesisUtterance("語音已開啟");
+    test.lang = "zh-TW";
+    test.rate = 0.9;
+    speechSynthesis.speak(test);
+    voiceBtn.textContent = "🔊 語音：開";
+    return;
+  }
+
+  voiceOn = !voiceOn;
+  voiceBtn.textContent = voiceOn ? "🔊 語音：開" : "🔇 語音：關";
+  if (!voiceOn) speechSynthesis.cancel();
+});
+
+copyBtn.addEventListener("click", async () => {
+  const side = Math.sqrt(saved.size);
+  const cell = 70, pad = 20;
+  const canvas = document.createElement("canvas");
+  canvas.width = side * cell + pad * 2;
+  canvas.height = canvas.width + 55;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#fff5f8";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#a23866";
+  ctx.font = "bold 22px sans-serif";
+  ctx.fillText("我的賓果盤｜房間 " + saved.roomId, pad, 32);
+
+  [...board.children].forEach((c,i) => {
+    const col=i%side, row=Math.floor(i/side);
+    const x=pad+col*cell, y=50+row*cell;
+    ctx.fillStyle = c.classList.contains("hit") ? "#ff5d9e" : "#fff";
+    ctx.fillRect(x+3,y+3,cell-6,cell-6);
+    ctx.strokeStyle="#efbfd0";
+    ctx.strokeRect(x+3,y+3,cell-6,cell-6);
+    ctx.fillStyle=c.classList.contains("hit") ? "#fff" : "#49323d";
+    ctx.font="bold 21px sans-serif";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(c.textContent,x+cell/2,y+cell/2);
+  });
+
+  try {
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+    copyHint.textContent = "✅ 已複製整張賓果盤圖片";
+  } catch(e) {
+    copyHint.textContent = "此瀏覽器不支援直接複製圖片";
+  }
+});
+
+socket.on("joinError", message => {
+  alert("❌ " + message);
+  location.href = "/";
+});
+
+socket.on("joinSuccess", data => {
+  saved.size = data.size;
+  if (data.scheduledAt) {
+    const start = new Date(data.scheduledAt);
+    startTimeText.textContent = "🕐 開賽時間：" + start.toLocaleString("zh-TW", {
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", hour12:false
+    });
+  } else {
+    startTimeText.textContent = "🕐 開賽時間：—";
+  }
+  goalText.textContent = "🏆 完成條件：" + (data.targetLines === 99 ? "全盤" : data.targetLines + " 線");
+  sessionStorage.setItem("bingoPlayer", JSON.stringify(saved));
+  renderBoard(data.size);
+
+  if (data.phase === "waiting") {
+    gameStatus.textContent = "等待開賽時間";
+  } else if (data.phase === "countdown" && data.countdownEndsAt) {
+    showCountdown(data.countdownEndsAt);
+  } else if (data.phase === "playing") {
+    gameStatus.textContent = "▶ 遊戲進行中";
+    if (data.currentNumber) {
+      current = data.currentNumber;
+      currentToken = data.drawToken || 0;
+      currentNumber.textContent = data.currentNumber;
+      allowCurrent(data.currentNumber);
+    }
+  }
+});
+
+socket.on("countdownStarted", data => {
+  showCountdown(data.countdownEndsAt);
+});
+
+socket.on("gameStarted", () => {
+  gameStatus.textContent = "▶ 遊戲進行中";
+});
+
+socket.on("numberDrawn", data => {
+  current = data.number;
+  currentToken = data.token;
+  currentNumber.textContent = data.number;
+  allowCurrent(data.number);
+  speak(data.number);
+});
+
+socket.on("rankingUpdate", renderRanking);
+
+socket.on("roomDeleted", () => {
+  alert("此房間已由管理員刪除");
+  sessionStorage.removeItem("bingoPlayer");
+  location.href = "/";
+});
+
+socket.on("gameEnded", data => {
+  current = null;
+  [...board.children].forEach(c => c.dataset.current = "0");
+  currentNumber.textContent = "-";
+  gameStatus.textContent = "🏁 遊戲結束";
+  if (data.ranking) renderRanking(data.ranking);
+});
+
+socket.on("connect", () => {
+  socket.emit("joinRoom", {
+    roomId: saved.roomId,
+    name: saved.name,
+    password: saved.password,
+    clientId: saved.clientId
+  });
+});
+</script>
+</body>
+</html>
