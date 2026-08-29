@@ -118,9 +118,10 @@ function drawNext(room) {
     return finishGame(room);
   }
 
+  const numberPoolMax = ({25:50, 36:60, 49:75, 64:90})[room.size] || room.size;
   const pool = room.version === "picture"
-    ? room.items.map(item => item.id)
-    : Array.from({length: room.size}, (_, i) => i + 1);
+    ? MAHJONG_ITEMS.map(item => item.id)
+    : Array.from({length: numberPoolMax}, (_, i) => i + 1);
   const remaining = pool.filter(value => !room.drawn.includes(value));
   if (!remaining.length) return finishGame(room);
 
@@ -221,7 +222,13 @@ const MAHJONG_ITEMS = [
   {id:"tiao8",face:"8條",group:"條",name:"8條",file:"33-bamboos-8.svg"},
   {id:"tiao9",face:"9條",group:"條",name:"9條",file:"34-bamboos-9.svg"},
   {id:"spring",face:"春",group:"花",name:"春",file:"35-spring.svg"},
-  {id:"summer",face:"夏",group:"花",name:"夏",file:"36-summer.svg"}
+  {id:"summer",face:"夏",group:"花",name:"夏",file:"36-summer.svg"},
+  {id:"autumn",face:"秋",group:"花",name:"秋",file:"37-autumn.svg"},
+  {id:"winter",face:"冬",group:"花",name:"冬",file:"38-winter.svg"},
+  {id:"plum",face:"梅",group:"花",name:"梅",file:"39-plum.svg"},
+  {id:"orchid",face:"蘭",group:"花",name:"蘭",file:"40-orchid.svg"},
+  {id:"chrysanthemum",face:"菊",group:"花",name:"菊",file:"41-chrysanthemum.svg"},
+  {id:"bambooFlower",face:"竹",group:"花",name:"竹",file:"42-bamboo.svg"}
 ];
 
 app.post("/api/admin/create-room", (req, res) => {
@@ -264,7 +271,7 @@ app.post("/api/admin/create-room", (req, res) => {
     playerPassword,
     version,
     theme,
-    items: version === "picture" ? MAHJONG_ITEMS.slice(0, size) : null,
+    items: version === "picture" ? MAHJONG_ITEMS.slice() : null,
     size,
     scheduledAt,
     countdownSeconds,

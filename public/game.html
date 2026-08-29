@@ -94,13 +94,15 @@ function loadBoardState(size) {
     } catch(e) {}
   }
 
+  const numberPoolMax = ({25:50, 36:60, 49:75, 64:90})[size] || size;
   boardNumbers = gameVersion === "picture"
-    ? gameItems.slice(0, size).map(x => x.id)
-    : Array.from({length:size}, (_,i)=>i+1);
+    ? gameItems.map(x => x.id)
+    : Array.from({length:numberPoolMax}, (_,i)=>i+1);
   for (let i = boardNumbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [boardNumbers[i], boardNumbers[j]] = [boardNumbers[j], boardNumbers[i]];
   }
+  boardNumbers = boardNumbers.slice(0, size);
   hitNumbers = new Set();
   saveBoardState(size);
 }
