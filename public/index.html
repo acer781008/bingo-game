@@ -1,107 +1,19 @@
 <!doctype html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
-  <title>賓果遊戲</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>多人打地鼠</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-<div class="top"><h1>🎰 賓果遊戲（原始版）</h1></div>
-
-<div class="wrap">
-  <div class="card login">
-    <h2>加入遊戲</h2>
-
-    <label>玩家名稱</label>
-    <input id="playerName" autocomplete="off" placeholder="請輸入玩家名稱">
-
-    <br><br>
-
-    <label>房間號碼</label>
-    <input id="roomId" autocomplete="off" placeholder="管理員提供的房間號碼">
-
-    <br><br>
-
-    <label>房間密碼</label>
-    <input id="playerPassword" type="password" placeholder="管理員提供的房間密碼">
-
-    <br><br>
-
-    <button id="joinBtn">🚀 加入遊戲</button>
-    <p id="joinStatus" class="muted">等待連線…</p>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-
-const playerName = document.getElementById("playerName");
-const roomId = document.getElementById("roomId");
-const playerPassword = document.getElementById("playerPassword");
-const joinBtn = document.getElementById("joinBtn");
-const joinStatus = document.getElementById("joinStatus");
-
-function getClientId() {
-  let id = sessionStorage.getItem("bingoClientId");
-  if (!id) {
-    id = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random());
-    sessionStorage.setItem("bingoClientId", id);
-  }
-  return id;
-}
-
-const params = new URLSearchParams(location.search);
-if (params.get("room")) roomId.value = params.get("room");
-
-socket.on("connect", () => {
-  joinStatus.textContent = "✅ 已連線，可以加入房間。";
-  joinBtn.disabled = false;
-});
-
-socket.on("connect_error", () => {
-  joinStatus.textContent = "❌ 無法連到遊戲主機。";
-  joinBtn.disabled = false;
-});
-
-joinBtn.addEventListener("click", () => {
-  const name = playerName.value.trim();
-  const room = roomId.value.trim();
-  const password = playerPassword.value;
-
-  if (!name) return alert("❌ 請輸入玩家名稱");
-  if (!room) return alert("❌ 請輸入房間號碼");
-  if (!password) return alert("❌ 請輸入房間密碼");
-
-  joinBtn.disabled = true;
-  joinStatus.textContent = "正在加入房間…";
-
-  socket.emit("joinRoom", {
-    roomId: room,
-    name,
-    password,
-    clientId: getClientId()
-  });
-});
-
-socket.on("joinError", message => {
-  joinBtn.disabled = false;
-  joinStatus.textContent = "❌ " + message;
-  alert("❌ " + message);
-});
-
-socket.on("joinSuccess", data => {
-  sessionStorage.setItem("bingoPlayer", JSON.stringify({
-    clientId: getClientId(),
-    name: playerName.value.trim(),
-    roomId: data.roomId,
-    password: playerPassword.value,
-    size: data.size
-  }));
-
-  location.href = "/game.html";
-});
-</script>
+  <main class="home card">
+    <h1>🔨 多人打地鼠</h1>
+    <p class="muted">選擇進入主控或玩家頁面</p>
+    <div class="stack">
+      <a class="btn primary" href="/admin.html">🎮 主控頁面</a>
+      <a class="btn" href="/play.html">🐹 玩家頁面</a>
+    </div>
+  </main>
 </body>
 </html>
