@@ -1,7 +1,6 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
-const fs = require("fs");
 const crypto = require("crypto");
 const { Server } = require("socket.io");
 
@@ -16,19 +15,6 @@ const adminSessions = new Set();
 const rooms = new Map();
 const timers = new Map();
 
-let callDurations = {};
-try {
-  callDurations = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "public", "audio", "durations.json"), "utf8")
-  );
-} catch (err) {
-  console.warn("Unable to load audio durations; using fallback timing.");
-}
-
-function callAudioMs(number) {
-  const ms = Number(callDurations[String(number)]);
-  return Number.isFinite(ms) && ms > 0 ? ms : 1800;
-}
 
 app.use(express.json());
 
@@ -64,6 +50,9 @@ function clearRoomTimers(roomId) {
 function roomInfo(room) {
   return {
     roomId: room.id,
+    version: room.version || "number",
+    theme: room.theme || null,
+    items: room.items || null,
     size: room.size,
     phase: room.phase,
     scheduledAt: room.scheduledAt,
@@ -129,19 +118,19 @@ function drawNext(room) {
     return finishGame(room);
   }
 
-  const remaining = [];
-  for (let n = 1; n <= room.size; n++) {
-    if (!room.drawn.includes(n)) remaining.push(n);
-  }
+  const pool = room.version === "picture"
+    ? room.items.map(item => item.id)
+    : Array.from({length: room.size}, (_, i) => i + 1);
+  const remaining = pool.filter(value => !room.drawn.includes(value));
   if (!remaining.length) return finishGame(room);
 
-  const number = remaining[Math.floor(Math.random() * remaining.length)];
-  room.drawn.push(number);
-  room.currentNumber = number;
+  const value = remaining[Math.floor(Math.random() * remaining.length)];
+  room.drawn.push(value);
+  room.currentNumber = value;
   room.drawToken += 1;
 
   io.to(room.id).emit("numberDrawn", {
-    number,
+    number: value,
     token: room.drawToken
   });
 }
@@ -158,20 +147,8 @@ function startGame(room) {
 
   const t = getTimers(room.id);
 
-  function scheduleNextDraw() {
-    if (!room || room.phase !== "playing") return;
-    const spokenNumber = room.currentNumber;
-    const delay = callAudioMs(spokenNumber) + room.drawIntervalMs;
-    clearTimeout(t.draw);
-    t.draw = setTimeout(() => {
-      if (!room || room.phase !== "playing") return;
-      drawNext(room);
-      if (room.phase === "playing") scheduleNextDraw();
-    }, delay);
-  }
-
   drawNext(room);
-  if (room.phase === "playing") scheduleNextDraw();
+  t.draw = setInterval(() => drawNext(room), room.drawIntervalMs);
   t.end = setTimeout(() => finishGame(room), room.gameSeconds * 1000);
 }
 
@@ -207,6 +184,46 @@ app.get("/admin.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+
+const MAHJONG_ITEMS = [
+  {id:"white",face:"白",group:"字",name:"白",file:"01-white-dragon.svg"},
+  {id:"green",face:"發",group:"字",name:"發",file:"02-green-dragon.svg"},
+  {id:"red",face:"中",group:"字",name:"中",file:"03-red-dragon.svg"},
+  {id:"east",face:"東",group:"字",name:"東",file:"04-east-wind.svg"},
+  {id:"south",face:"南",group:"字",name:"南",file:"05-south-wind.svg"},
+  {id:"west",face:"西",group:"字",name:"西",file:"06-west-wind.svg"},
+  {id:"north",face:"北",group:"字",name:"北",file:"07-north-wind.svg"},
+  {id:"wan1",face:"1萬",group:"萬",name:"1萬",file:"08-characters-1.svg"},
+  {id:"wan2",face:"2萬",group:"萬",name:"2萬",file:"09-characters-2.svg"},
+  {id:"wan3",face:"3萬",group:"萬",name:"3萬",file:"10-characters-3.svg"},
+  {id:"wan4",face:"4萬",group:"萬",name:"4萬",file:"11-characters-4.svg"},
+  {id:"wan5",face:"5萬",group:"萬",name:"5萬",file:"12-characters-5.svg"},
+  {id:"wan6",face:"6萬",group:"萬",name:"6萬",file:"13-characters-6.svg"},
+  {id:"tong1",face:"1筒",group:"筒",name:"1筒",file:"17-circles-1.svg"},
+  {id:"tong2",face:"2筒",group:"筒",name:"2筒",file:"18-circles-2.svg"},
+  {id:"tong3",face:"3筒",group:"筒",name:"3筒",file:"19-circles-3.svg"},
+  {id:"tong4",face:"4筒",group:"筒",name:"4筒",file:"20-circles-4.svg"},
+  {id:"tong5",face:"5筒",group:"筒",name:"5筒",file:"21-circles-5.svg"},
+  {id:"tong6",face:"6筒",group:"筒",name:"6筒",file:"22-circles-6.svg"},
+  {id:"tiao1",face:"1條",group:"條",name:"1條",file:"26-bamboos-1.svg"},
+  {id:"tiao2",face:"2條",group:"條",name:"2條",file:"27-bamboos-2.svg"},
+  {id:"tiao3",face:"3條",group:"條",name:"3條",file:"28-bamboos-3.svg"},
+  {id:"tiao4",face:"4條",group:"條",name:"4條",file:"29-bamboos-4.svg"},
+  {id:"tiao5",face:"5條",group:"條",name:"5條",file:"30-bamboos-5.svg"},
+  {id:"tiao6",face:"6條",group:"條",name:"6條",file:"31-bamboos-6.svg"},
+  {id:"wan7",face:"7萬",group:"萬",name:"7萬",file:"14-characters-7.svg"},
+  {id:"wan8",face:"8萬",group:"萬",name:"8萬",file:"15-characters-8.svg"},
+  {id:"wan9",face:"9萬",group:"萬",name:"9萬",file:"16-characters-9.svg"},
+  {id:"tong7",face:"7筒",group:"筒",name:"7筒",file:"23-circles-7.svg"},
+  {id:"tong8",face:"8筒",group:"筒",name:"8筒",file:"24-circles-8.svg"},
+  {id:"tong9",face:"9筒",group:"筒",name:"9筒",file:"25-circles-9.svg"},
+  {id:"tiao7",face:"7條",group:"條",name:"7條",file:"32-bamboos-7.svg"},
+  {id:"tiao8",face:"8條",group:"條",name:"8條",file:"33-bamboos-8.svg"},
+  {id:"tiao9",face:"9條",group:"條",name:"9條",file:"34-bamboos-9.svg"},
+  {id:"spring",face:"春",group:"花",name:"春",file:"35-spring.svg"},
+  {id:"summer",face:"夏",group:"花",name:"夏",file:"36-summer.svg"}
+];
+
 app.post("/api/admin/create-room", (req, res) => {
   if (!isAdmin(req)) {
     return res.status(401).json({ success: false, message: "未登入管理員" });
@@ -221,11 +238,14 @@ app.post("/api/admin/create-room", (req, res) => {
   const drawIntervalMs = Number(req.body.drawIntervalMs);
   const note = String(req.body.note || "").trim();
   const targetLines = Number(req.body.targetLines || 1);
+  const version = req.body.version === "picture" ? "picture" : "number";
+  const theme = version === "picture" ? "mahjong" : null;
 
   if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
   if (!playerPassword) return res.status(400).json({ success: false, message: "請輸入房間密碼" });
   if (rooms.has(roomId)) return res.status(400).json({ success: false, message: "房間號碼已存在" });
   if (![25, 36, 49, 64].includes(size)) return res.status(400).json({ success: false, message: "盤面格數錯誤" });
+  if (version === "picture" && ![25,36].includes(size)) return res.status(400).json({success:false,message:"麻將版目前只開放 5×5、6×6"});
   if (![30, 60, 90].includes(countdownSeconds)) return res.status(400).json({ success: false, message: "倒數秒數錯誤" });
   if (![1,2,3,5,99].includes(targetLines)) return res.status(400).json({ success: false, message: "完成線數設定錯誤" });
   if (![60, 90, 120].includes(gameSeconds)) return res.status(400).json({ success: false, message: "遊戲秒數錯誤" });
@@ -242,7 +262,9 @@ app.post("/api/admin/create-room", (req, res) => {
   const room = {
     id: roomId,
     playerPassword,
-    version: "original",
+    version,
+    theme,
+    items: version === "picture" ? MAHJONG_ITEMS.slice(0, size) : null,
     size,
     scheduledAt,
     countdownSeconds,

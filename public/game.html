@@ -7,7 +7,7 @@
   <title>賓果遊戲室</title>
 </head>
 <body>
-<div class="top"><h1>🎰 賓果遊戲（原始版）</h1></div>
+<div class="top"><h1>🎰 賓果遊戲</h1></div>
 
 <div class="wrap">
   <div class="card">
@@ -74,9 +74,11 @@ let currentToken = 0;
 let countdownTimer = null;
 let boardNumbers = [];
 let hitNumbers = new Set();
+let gameVersion = "number";
+let gameItems = [];
 
 function boardStorageKey() {
-  return `bingoBoard:${saved.roomId}:${saved.clientId}`;
+  return `bingoBoard:${saved.roomId}:${saved.clientId}:${gameVersion}`;
 }
 
 function loadBoardState(size) {
@@ -92,7 +94,9 @@ function loadBoardState(size) {
     } catch(e) {}
   }
 
-  boardNumbers = Array.from({length:size}, (_,i)=>i+1);
+  boardNumbers = gameVersion === "picture"
+    ? gameItems.slice(0, size).map(x => x.id)
+    : Array.from({length:size}, (_,i)=>i+1);
   for (let i = boardNumbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [boardNumbers[i], boardNumbers[j]] = [boardNumbers[j], boardNumbers[i]];
@@ -109,6 +113,14 @@ function saveBoardState(size) {
   }));
 }
 
+
+function mahjongHTML(item,current=false){
+  if(!item) return "";
+  const cls = current ? " current-mahjong-image" : "";
+  const label = item.name || item.face || "";
+  return `<img class="mahjong-tile-image${cls}" src="/mahjong/${item.file}" alt="${label}" draggable="false">`;
+}
+
 function renderBoard(size) {
   loadBoardState(size);
   const side = Math.sqrt(size);
@@ -117,8 +129,13 @@ function renderBoard(size) {
 
   boardNumbers.forEach(n => {
     const cell = document.createElement("div");
-    cell.className = "cell" + (hitNumbers.has(n) ? " hit" : "");
-    cell.textContent = n;
+    cell.className = "cell" + (hitNumbers.has(n) ? " hit" : "") + (gameVersion === "picture" ? " picture-cell" : "");
+    if (gameVersion === "picture") {
+      const item = gameItems.find(x => x.id === n);
+      cell.innerHTML = item ? mahjongHTML(item) : n;
+    } else {
+      cell.textContent = n;
+    }
     cell.dataset.number = n;
     cell.addEventListener("click", () => clickCell(cell, n));
     board.appendChild(cell);
@@ -147,7 +164,7 @@ function stats() {
 }
 
 function clickCell(cell, number) {
-  if (number !== current) return;
+  if (String(number) !== String(current)) return;
   if (cell.dataset.current !== "1") return;
   if (cell.classList.contains("hit")) return;
 
@@ -165,7 +182,7 @@ function clickCell(cell, number) {
 function allowCurrent(number) {
   [...board.children].forEach(c => c.dataset.current = "0");
   const target = [...board.children].find(c =>
-    Number(c.dataset.number) === number && !c.classList.contains("hit")
+    String(c.dataset.number) === String(number) && !c.classList.contains("hit")
   );
   if (target) target.dataset.current = "1";
 }
@@ -186,6 +203,7 @@ function showCountdown(endAt) {
 }
 
 function speak(number) {
+  if (gameVersion === "picture") return;
   if (!voiceOn || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(String(number));
@@ -233,38 +251,93 @@ voiceBtn.addEventListener("click", () => {
 
 copyBtn.addEventListener("click", async () => {
   const side = Math.sqrt(saved.size);
-  const cell = 70, pad = 20;
+  const cell = side === 6 ? 64 : 72;
+  const pad = 20;
+  const headerH = 55;
+
   const canvas = document.createElement("canvas");
   canvas.width = side * cell + pad * 2;
-  canvas.height = canvas.width + 55;
+  canvas.height = side * cell + pad * 2 + headerH;
   const ctx = canvas.getContext("2d");
 
   ctx.fillStyle = "#fff5f8";
   ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle = "#a23866";
   ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillText("我的賓果盤｜房間 " + saved.roomId, pad, 32);
 
-  [...board.children].forEach((c,i) => {
-    const col=i%side, row=Math.floor(i/side);
-    const x=pad+col*cell, y=50+row*cell;
+  async function loadCanvasImage(src) {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  const cells = [...board.children];
+
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    const col = i % side;
+    const row = Math.floor(i / side);
+    const x = pad + col * cell;
+    const y = headerH + pad + row * cell;
+    const inner = cell - 8;
+
     ctx.fillStyle = c.classList.contains("hit") ? "#ff5d9e" : "#fff";
-    ctx.fillRect(x+3,y+3,cell-6,cell-6);
-    ctx.strokeStyle="#efbfd0";
-    ctx.strokeRect(x+3,y+3,cell-6,cell-6);
-    ctx.fillStyle=c.classList.contains("hit") ? "#fff" : "#49323d";
-    ctx.font="bold 21px sans-serif";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(c.textContent,x+cell/2,y+cell/2);
-  });
+    ctx.fillRect(x+4,y+4,inner,inner);
+    ctx.strokeStyle = "#efbfd0";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+4,y+4,inner,inner);
+
+    if (gameVersion === "picture") {
+      const tileImg = c.querySelector("img");
+      if (tileImg && tileImg.src) {
+        try {
+          const img = await loadCanvasImage(tileImg.src);
+          const maxW = inner - 10;
+          const maxH = inner - 10;
+          const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+          const w = img.naturalWidth * scale;
+          const h = img.naturalHeight * scale;
+          ctx.drawImage(img, x + cell/2 - w/2, y + cell/2 - h/2, w, h);
+        } catch(e) {
+          const item = gameItems.find(x => String(x.id) === String(c.dataset.number));
+          ctx.fillStyle = "#49323d";
+          ctx.font = "bold 16px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(item?.name || "", x+cell/2, y+cell/2);
+        }
+      }
+    } else {
+      ctx.fillStyle = c.classList.contains("hit") ? "#fff" : "#49323d";
+      ctx.font = "bold 21px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(c.textContent, x+cell/2, y+cell/2);
+    }
+
+    if (c.classList.contains("hit")) {
+      ctx.strokeStyle = "#ff2f83";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x+6,y+6,inner-4,inner-4);
+    }
+  }
 
   try {
     const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
     await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
     copyHint.textContent = "✅ 已複製整張賓果盤圖片";
   } catch(e) {
-    copyHint.textContent = "此瀏覽器不支援直接複製圖片";
+    const link = document.createElement("a");
+    link.download = `bingo-${saved.roomId}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    copyHint.textContent = "✅ 已下載整張賓果盤圖片";
   }
 });
 
@@ -275,6 +348,9 @@ socket.on("joinError", message => {
 
 socket.on("joinSuccess", data => {
   saved.size = data.size;
+  gameVersion = data.version || "number";
+  gameItems = data.items || [];
+  voiceBtn.style.display = gameVersion === "picture" ? "none" : "";
   if (data.scheduledAt) {
     const start = new Date(data.scheduledAt);
     startTimeText.textContent = "🕐 開賽時間：" + start.toLocaleString("zh-TW", {
@@ -297,7 +373,8 @@ socket.on("joinSuccess", data => {
     if (data.currentNumber) {
       current = data.currentNumber;
       currentToken = data.drawToken || 0;
-      currentNumber.textContent = data.currentNumber;
+      const item = gameItems.find(x => x.id === data.currentNumber);
+      currentNumber.innerHTML = item ? mahjongHTML(item,true) : data.currentNumber;
       allowCurrent(data.currentNumber);
     }
   }
@@ -314,9 +391,10 @@ socket.on("gameStarted", () => {
 socket.on("numberDrawn", data => {
   current = data.number;
   currentToken = data.token;
-  currentNumber.textContent = data.number;
+  const item = gameItems.find(x => x.id === data.number);
+  currentNumber.innerHTML = item ? mahjongHTML(item,true) : data.number;
   allowCurrent(data.number);
-  speak(data.number);
+  if (gameVersion !== "picture") speak(data.number);
 });
 
 socket.on("rankingUpdate", renderRanking);

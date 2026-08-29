@@ -1,1 +1,56 @@
 *{box-sizing:border-box}body{margin:0;font-family:"Microsoft JhengHei",Arial;background:#fff5f8;color:#49323d}.top{padding:18px 22px;background:linear-gradient(90deg,#ff4f9a,#ff78ad);color:#fff}.top h1{margin:0}.wrap{width:min(1050px,94%);margin:20px auto}.card{background:#fff;border:1px solid #ffd0df;border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 25px #dba6b833}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.full{grid-column:1/-1}label{display:block;font-weight:800;color:#a23866;margin-bottom:6px}input,select,button{width:100%;padding:13px;border:1px solid #efbfd0;border-radius:12px;font-size:16px;background:#fff}button{background:#ff4f9a;color:#fff;border:0;font-weight:800;cursor:pointer}.purple{background:#7355d4}.status{text-align:center;font-size:21px;font-weight:900;color:#a23866;margin:14px}.number{text-align:center;font-size:72px;font-weight:900;color:#ff3f8f}.board{display:grid;gap:7px;max-width:700px;margin:auto}.cell{aspect-ratio:1;border:2px solid #efbfd0;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,3vw,26px);font-weight:900;background:#fff}.cell.hit{background:#ff5d9e;color:#fff;border-color:#ff5d9e}.leader{width:100%;border-collapse:collapse}.leader th,.leader td{padding:9px;border-bottom:1px solid #f4d9e3;text-align:center}.row{display:flex;gap:10px;align-items:end}.row>*{flex:1}.login{max-width:450px;margin:8vh auto}.hidden{display:none}.muted{color:#88737d;font-size:14px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{width:96%;margin:10px auto}.card{padding:13px}.top h1{font-size:21px}.number{font-size:58px}.board{gap:5px}.leader th,.leader td{font-size:12px;padding:6px 2px}}
+.picture-cell{
+  min-height:84px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+@media (max-width:600px){
+  .picture-cell{min-height:70px;padding:4px 2px}
+  .picture-cell small{font-size:10px!important}
+}
+
+.mahjong-preview{background:#fffdf7;border:1px solid #d8ccb3;border-radius:9px;padding:6px;text-align:center}
+.mahjong-preview div{font-size:22px;font-weight:900}
+.mahjong-preview small{font-size:10px;color:#75654d}
+.mahjong-face{width:100%;height:100%;min-height:52px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fffef8,#f4ecd7);border:1px solid #d6c6a6;border-radius:7px;font-size:clamp(17px,4vw,30px);font-weight:900;color:#b21f1f}
+.mahjong-face.字{color:#176a34}.mahjong-face.花{color:#8a3d8e}.mahjong-face.吉{color:#9b6700}
+.current-mahjong{display:inline-flex;min-width:90px;min-height:110px;align-items:center;justify-content:center;padding:10px 18px;background:linear-gradient(#fffef8,#f4ecd7);border:2px solid #d3bf94;border-radius:12px;box-shadow:0 6px 0 #8aaa72;font-size:46px;font-weight:900;color:#b21f1f}
+@media(max-width:600px){.mahjong-face{min-height:42px;font-size:clamp(14px,5vw,24px)}.picture-cell{min-height:56px;padding:3px}}
+
+.picture-cell{background:#f3ead4!important;padding:5px!important;border-radius:10px}
+.mahjong-face{box-sizing:border-box;width:100%;height:100%;min-height:72px;border:1px solid #d6c8aa;border-radius:9px;background:linear-gradient(145deg,#fffef9,#f9f4e8 72%,#e8dec5);box-shadow:inset 0 -4px 0 #e1d4b8,0 3px 0 #5d9868,0 5px 9px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-family:"Microsoft JhengHei",sans-serif}
+.mahjong-face.wan{flex-direction:column;line-height:.95}.mahjong-face.wan b{font-size:clamp(24px,5vw,38px);color:#151515}.mahjong-face.wan span{font-size:clamp(17px,3.5vw,27px);color:#c82424;font-weight:900;margin-top:3px}
+.mahjong-face.bamboo{flex-direction:column;gap:3px}.bamboo-pips{width:76%;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;justify-items:center}.bamboo-pips i{width:7px;height:20px;border-radius:5px;background:linear-gradient(90deg,#176c3b,#5fae68,#176c3b);border:1px solid #0c5b30;position:relative}.bamboo-pips i:after{content:"";position:absolute;left:1px;right:1px;top:7px;height:3px;background:#d73a32}.mahjong-face.bamboo small{font-size:10px;color:#176c3b;font-weight:800}
+.mahjong-face.honor-tile{font-size:clamp(28px,6vw,45px);font-weight:900;color:#171717}.mahjong-face.red-dragon{color:#d11f26}.mahjong-face.green-dragon{color:#087b3b}.white-frame{width:54%;height:60%;border:4px double #276d55;border-radius:4px}
+.current-tile-art{width:110px!important;height:140px!important;min-height:140px!important;margin:4px auto}.current-tile-art.wan b{font-size:52px}.current-tile-art.wan span{font-size:35px}
+@media(max-width:600px){.picture-cell{min-height:64px!important;padding:3px!important}.mahjong-face{min-height:58px}.bamboo-pips i{width:5px;height:14px}}
+
+/* V20.1 傳統彩色麻將圖片版 */
+.picture-cell{background:transparent!important;padding:3px!important;overflow:visible}
+.mahjong-tile-image{display:block;width:100%;height:100%;max-height:118px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));user-select:none}
+.current-mahjong-image{width:118px!important;height:158px!important;max-height:none!important;margin:4px auto}
+.picture-cell.hit .mahjong-tile-image{opacity:.48;transform:scale(.96)}
+@media(max-width:600px){
+ .picture-cell{padding:1px!important}
+ .mahjong-tile-image{max-height:86px}
+ .current-mahjong-image{width:94px!important;height:126px!important}
+}
+
+.admin-current-mahjong{
+  display:block;
+  width:92px;
+  height:124px;
+  object-fit:contain;
+  margin:8px auto;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.15));
+}
+@media(max-width:600px){
+  .admin-current-mahjong{width:78px;height:105px}
+}
+
+/* 香港傳統麻將素材版 */
+.mahjong-preview img{width:48px;height:62px;object-fit:contain;display:block;margin:auto}
+.mahjong-preview small{display:block;margin-top:3px;font-size:11px}
