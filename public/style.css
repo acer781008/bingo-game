@@ -130,3 +130,11 @@ button:disabled{opacity:.48;cursor:not-allowed}
   .inline-actions button,.control-buttons button{width:100%;min-width:0}.control-head>div:first-child{min-width:0}
   .share-buttons button{width:100%}.welcome-animal{font-size:38px}
 }
+
+/* V21.2 compact admin control */
+.compact-share{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.compact-status{margin-top:12px;padding:10px 14px}
+.compact-current{margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.72);font-weight:800;color:#7b294d;text-align:center}
+.compact-current #num{font-size:28px;margin-left:8px}
+.compact-current .admin-current-mahjong{height:54px;vertical-align:middle}
+@media(max-width:650px){.compact-share{grid-template-columns:1fr}.control-head{gap:10px}.control-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.control-buttons button:first-child{grid-column:1/-1}}

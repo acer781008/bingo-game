@@ -188,6 +188,11 @@ app.post("/api/admin/login", (req, res) => {
   res.json({ success: true });
 });
 
+app.get("/", (req, res) => {
+  if (isAdmin(req)) return res.redirect("/admin.html");
+  return res.redirect("/admin-login.html");
+});
+
 app.get("/admin.html", (req, res) => {
   if (!isAdmin(req)) return res.redirect("/admin-login.html");
   res.sendFile(path.join(__dirname, "public", "admin.html"));

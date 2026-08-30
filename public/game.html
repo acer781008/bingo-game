@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21">
+  <link rel="stylesheet" href="/style.css?v=21.2">
   <title>賓果遊戲室</title>
 </head>
 <body class="cute-theme player-page">
@@ -205,11 +205,22 @@ function showCountdown(endAt) {
   countdownTimer = setInterval(update, 250);
 }
 
+function speechText(value) {
+  if (gameVersion !== "picture") return String(value);
+  const item = gameItems.find(x => x.id === value);
+  if (!item) return String(value);
+  const digit = {"1":"一","2":"二","3":"三","4":"四","5":"五","6":"六","7":"七","8":"八","9":"九"};
+  const name = item.name || item.face || value;
+  if (/^[1-9]萬$/.test(name)) return digit[name[0]] + "萬";
+  if (/^[1-9]筒$/.test(name)) return digit[name[0]] + "筒";
+  if (/^[1-9](條|索)$/.test(name)) return digit[name[0]] + "條";
+  if (name === "白") return "白板";
+  return name;
+}
 function speak(number) {
-  if (gameVersion === "picture") return;
   if (!voiceOn || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(String(number));
+  const utterance = new SpeechSynthesisUtterance(speechText(number));
   utterance.lang = "zh-TW";
   utterance.rate = 0.9;
   speechSynthesis.speak(utterance);
@@ -353,7 +364,7 @@ socket.on("joinSuccess", data => {
   saved.size = data.size;
   gameVersion = data.version || "number";
   gameItems = data.items || [];
-  voiceBtn.style.display = gameVersion === "picture" ? "none" : "";
+  voiceBtn.style.display = "";
   if (data.scheduledAt) {
     const start = new Date(data.scheduledAt);
     startTimeText.textContent = "🕐 開賽時間：" + start.toLocaleString("zh-TW", {
@@ -397,7 +408,7 @@ socket.on("numberDrawn", data => {
   const item = gameItems.find(x => x.id === data.number);
   currentNumber.innerHTML = item ? mahjongHTML(item,true) : data.number;
   allowCurrent(data.number);
-  if (gameVersion !== "picture") speak(data.number);
+  speak(data.number);
 });
 
 socket.on("rankingUpdate", renderRanking);

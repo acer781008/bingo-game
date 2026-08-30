@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21">
+  <link rel="stylesheet" href="/style.css?v=21.2">
   <title>賓果主控室</title>
 </head>
 <body class="cute-theme admin-page">
@@ -21,6 +21,7 @@
         <select id="ver">
           <option value="number">🔢 數字版</option>
           <option value="picture">🀄 麻將版</option>
+          <option value="farm" disabled>🌱 種菜版（預留）</option>
         </select>
       </div>
       <div>
@@ -96,20 +97,16 @@
         </div>
       </div>
 
-      <label>玩家專屬網址</label>
-      <input id="url" readonly>
-      <div class="share-buttons">
+      <div class="share-buttons compact-share">
         <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
         <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
       </div>
-      <div id="shareInfo" class="share-info"></div>
-
-      <div id="st" class="status">等待建立房間</div>
+      <div id="st" class="status compact-status">等待建立房間</div>
       <div class="row room-meta">
         <b id="playerCount">👥 目前玩家：0 人</b>
         <span class="muted">玩家只需點專屬網址並輸入遊戲名</span>
       </div>
-      <div id="num" class="number">-</div>
+      <div class="compact-current">目前叫號／牌：<span id="num">-</span></div>
     </div>
 
     <div class="card">
@@ -126,8 +123,8 @@ const $ = id => document.getElementById(id);
 const el = {
   ver:$('ver'), pictureOptions:$('pictureOptions'), mahjongPreview:$('mahjongPreview'), size:$('size'), roomId:$('rid'),
   newRoomBtn:$('newRoomBtn'), scheduledAt:$('when'), gameSeconds:$('game'), countdownSeconds:$('count'),
-  drawIntervalMs:$('speed'), control:$('ctl'), showRoom:$('show'), playerUrl:$('url'), status:$('st'),
-  currentNumber:$('num'), rankBody:$('rb'), roomNote:$('roomNote'), shareInfo:$('shareInfo'),
+  drawIntervalMs:$('speed'), control:$('ctl'), showRoom:$('show'), playerUrl:null, status:$('st'),
+  currentNumber:$('num'), rankBody:$('rb'), roomNote:$('roomNote'), shareInfo:null,
   targetLines:$('targetLines'), playerCount:$('playerCount'), startBtn:$('startBtn'), createBtn:$('createBtn')
 };
 let activeRoom='';
@@ -149,7 +146,7 @@ function formatDate(ms){
 }
 function boardLabel(size){ return ({25:'5×5',36:'6×6',49:'7×7',64:'8×8'})[Number(size)] || size; }
 function speedLabel(ms){ return (Number(ms)/1000).toString().replace('.0',''); }
-function modeLabel(){ return el.ver.value==='picture' ? '麻將版' : '數字版'; }
+function modeLabel(){ return el.ver.value==='picture' ? '麻將版' : el.ver.value==='farm' ? '種菜版' : '數字版'; }
 function goalLabel(){ return el.targetLines.value==='99' ? '全盤' : `${el.targetLines.value} 條線`; }
 
 function updateVersionUI(){
@@ -185,7 +182,7 @@ function buildShareText(room){
   const unit=el.ver.value==='picture' ? '張' : '個';
   return [
     '🎰 賓果挑戰',
-    '🔗 挑戰連結：'+el.playerUrl.value,
+    '🔗 挑戰連結：'+playerUrl(),
     '🔢 房間號：'+room.roomId,
     '🎮 遊戲模式：'+modeLabel(),
     '📐 盤面大小：'+boardLabel(el.size.value),
@@ -210,9 +207,8 @@ async function createRoom(){
   const d=await r.json(); if(!d.success) return alert('❌ '+d.message);
   activeRoom=d.room.roomId;
   el.showRoom.textContent=activeRoom;
-  el.playerUrl.value=location.origin+'/?room='+encodeURIComponent(activeRoom);
+  // 玩家入口固定使用 index.html，首頁 / 保留給主控登入。
   shareText=buildShareText(d.room);
-  el.shareInfo.textContent=shareText;
   el.control.classList.remove('hidden');
   el.newRoomBtn.disabled=true; el.createBtn.disabled=true; el.roomId.disabled=true;
   socket.emit('watchRoom',{roomId:activeRoom});
@@ -224,8 +220,9 @@ async function copyText(text,ok){
   try{ await navigator.clipboard.writeText(text); alert('✅ '+ok); }
   catch(e){ alert('❌ 無法自動複製，請長按文字手動複製'); }
 }
-function copyPlayerUrl(){ copyText(el.playerUrl.value,'已複製玩家連結'); }
-function copyShareText(){ copyText(shareText||el.shareInfo.textContent.trim(),'已複製分享文字'); }
+function playerUrl(){ return location.origin+'/index.html?room='+encodeURIComponent(activeRoom||el.roomId.value); }
+function copyPlayerUrl(){ copyText(playerUrl(),'已複製玩家連結'); }
+function copyShareText(){ copyText(shareText||buildShareText({roomId:activeRoom,scheduledAt:el.scheduledAt.value?new Date(el.scheduledAt.value).getTime():null}),'已複製分享文字'); }
 
 function renderRanking(list){
   el.rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank<4?['🥇','🥈','🥉'][p.rank-1]:p.rank}</td><td>${esc(p.name)}</td><td>${p.hitCount}</td><td>${p.bingoLines}</td><td>${p.finishAt?new Date(p.finishAt).toLocaleTimeString('zh-TW',{hour12:false}):'—'}</td></tr>`).join('');
