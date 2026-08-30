@@ -33,18 +33,17 @@
           <option value="64">8×8</option>
         </select>
       </div>
-      <div class="full room-id-box">
+      <div class="room-id-box">
         <label>🔢 房間號碼</label>
         <div class="inline-actions">
           <input id="rid" readonly>
           <button id="newRoomBtn" class="purple" type="button" onclick="generateRoomId()">🔄 產生新房號</button>
         </div>
-        
+        <div class="muted">建立房間前可以重新產生；建立後房號會鎖定。</div>
       </div>
-      <div class="full">
+      <div>
         <label>📅 開賽日期時間（可不選）</label>
         <input id="when" type="datetime-local">
-        
       </div>
       <div>
         <label>⏱️ 遊戲秒數</label>
@@ -71,7 +70,7 @@
       </div>
     </div>
 
-    <div id="pictureOptions" class="full hidden" style="margin-top:8px">
+    <div id="pictureOptions" class="full hidden" style="margin-top:18px">
       <div class="soft-panel">
         <b>🀄 麻將版</b>
         <p class="muted" style="margin:6px 0 10px">開獎池共 42 張；5×5 隨機 25 張、6×6 隨機 36 張。</p>
@@ -79,8 +78,11 @@
       </div>
     </div>
 
-    <div class="compact-note"><label>📝 備註（可不填）</label><textarea id="roomNote" rows="1" placeholder="例如：請提前進入等待室"></textarea></div>
-    <button id="createBtn" onclick="createRoom()">✨ 建立房間</button>
+    <div class="compact-note-row">
+      <label for="roomNote">📝 備註（可不填）</label>
+      <input id="roomNote" type="text" placeholder="例如：請提前進入等待室">
+    </div>
+    <button id="createBtn" class="compact-create-btn" onclick="createRoom()">✨ 建立房間</button>
   </div>
 
   <div id="ctl" class="hidden admin-dashboard">
@@ -98,10 +100,10 @@
         <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
         <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
       </div>
-      <div class="room-live-strip">
+      <div class="room-summary-bar">
         <b id="playerCount">👥 目前玩家：0 人</b>
-        <b class="live-current">📣 目前叫號／牌：<span id="num">-</span></b>
-        <div id="st" class="status compact-status">🟢 等待中</div>
+        <b>📣 目前叫號／牌：<span id="num">-</span></b>
+        <b id="st">🟡 等待中</b>
       </div>
     </div>
 
