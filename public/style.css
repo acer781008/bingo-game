@@ -154,11 +154,52 @@ button:disabled{opacity:.48;cursor:not-allowed}
 @media(max-width:650px){.ranking-head{align-items:stretch;flex-direction:column}.rank-copy-btn{width:100%}}
 
 
-/* V21.5 設定區：只靠左右兩欄重新排列縮短高度，不縮字 */
-.admin-page .settings-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 14px;align-items:end}
-.admin-page .settings-grid label{font-size:16px;margin-bottom:6px}
-.admin-page .settings-grid input,.admin-page .settings-grid select{font-size:16px;padding:13px}
-.admin-page .settings-grid .inline-actions input{font-size:20px}
-.admin-page .settings-create-btn{margin-top:14px;font-size:16px;padding:13px}
-.admin-page #pictureOptions{margin-top:12px!important}
-@media(max-width:700px){.admin-page .settings-grid{grid-template-columns:1fr}.admin-page .settings-grid .full{grid-column:1}}
+/* V21.4 真正緊湊主控修正 */
+body.admin-page .wrap{margin-top:12px}
+body.admin-page .wrap>.card:first-child{padding:14px 18px;margin-bottom:12px}
+body.admin-page .wrap>.card:first-child h2{margin:0 0 10px;font-size:20px}
+body.admin-page .wrap>.card:first-child .grid{gap:8px 12px}
+body.admin-page .wrap>.card:first-child label{margin-bottom:3px;font-size:14px}
+body.admin-page .wrap>.card:first-child input,
+body.admin-page .wrap>.card:first-child select{padding:9px 11px;min-height:40px}
+body.admin-page .room-id-box{grid-column:1/-1}
+body.admin-page .inline-actions{gap:8px}
+body.admin-page .inline-actions input{font-size:18px;min-height:40px}
+body.admin-page .inline-actions button{padding:9px 12px;min-height:40px}
+body.admin-page .compact-note{margin-top:8px}
+body.admin-page .compact-note label{margin-bottom:3px}
+body.admin-page .compact-note input{padding:9px 11px;min-height:40px}
+body.admin-page .compact-create{margin-top:8px;padding:10px}
+body.admin-page #pictureOptions{margin-top:8px!important}
+body.admin-page #pictureOptions .soft-panel{padding:10px}
+body.admin-page #pictureOptions p{margin:3px 0 6px!important}
+
+.room-live-strip{
+  display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px;
+  margin-top:10px;padding:9px 10px;border:1px solid #efd4df;border-radius:12px;
+  background:rgba(255,248,251,.82);text-align:center;align-items:center;
+}
+.room-live-strip b{font-size:14px;color:#6f4055}
+.room-live-strip #st{color:#a23866}
+.live-current #num{font-size:18px;color:#ff3f8f;margin-left:3px}
+.live-current .admin-current-mahjong{display:inline-block;width:34px;height:44px;margin:0 3px;vertical-align:middle}
+
+.ranking-card{overflow-x:hidden}
+.ranking-card .leader{min-width:0!important;width:100%;table-layout:fixed}
+.ranking-card .leader th,.ranking-card .leader td{white-space:normal!important;padding:8px 4px;font-size:13px;overflow-wrap:anywhere}
+.ranking-card .leader th:nth-child(1),.ranking-card .leader td:nth-child(1){width:11%}
+.ranking-card .leader th:nth-child(2),.ranking-card .leader td:nth-child(2){width:27%}
+.ranking-card .leader th:nth-child(3),.ranking-card .leader td:nth-child(3){width:20%}
+.ranking-card .leader th:nth-child(4),.ranking-card .leader td:nth-child(4){width:17%}
+.ranking-card .leader th:nth-child(5),.ranking-card .leader td:nth-child(5){width:25%}
+
+@media(max-width:700px){
+ body.admin-page .wrap>.card:first-child .grid{grid-template-columns:1fr 1fr}
+ body.admin-page .room-id-box{grid-column:1/-1}
+ .room-live-strip{grid-template-columns:1fr}
+ .ranking-card .leader th,.ranking-card .leader td{font-size:11px;padding:6px 2px}
+}
+@media(max-width:480px){
+ body.admin-page .wrap>.card:first-child .grid{grid-template-columns:1fr}
+ body.admin-page .room-id-box{grid-column:1}
+}

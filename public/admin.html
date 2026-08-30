@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.5">
+  <link rel="stylesheet" href="/style.css?v=21.4">
   <title>賓果主控室</title>
 </head>
 <body class="cute-theme admin-page">
@@ -15,9 +15,9 @@
 <div class="wrap">
   <div class="card">
     <h2>🎮 遊戲設定</h2>
-    <div class="grid settings-grid">
+    <div class="grid">
       <div>
-        <label>🎮 遊戲版本</label>
+        <label>遊戲版本</label>
         <select id="ver">
           <option value="number">🔢 數字版</option>
           <option value="picture">🀄 麻將版</option>
@@ -25,7 +25,7 @@
         </select>
       </div>
       <div>
-        <label>📐 盤面格數</label>
+        <label>盤面格數</label>
         <select id="size">
           <option value="25">5×5</option>
           <option value="36">6×6</option>
@@ -33,7 +33,6 @@
           <option value="64">8×8</option>
         </select>
       </div>
-
       <div class="full room-id-box">
         <label>🔢 房間號碼</label>
         <div class="inline-actions">
@@ -41,19 +40,24 @@
           <button id="newRoomBtn" class="purple" type="button" onclick="generateRoomId()">🔄 產生新房號</button>
         </div>
       </div>
-
       <div>
-        <label>📅 開賽時間（可不選）</label>
+        <label>📅 開賽日期時間（可不選）</label>
         <input id="when" type="datetime-local">
       </div>
       <div>
         <label>⏱️ 遊戲秒數</label>
         <select id="game"><option>60</option><option selected>90</option><option>120</option></select>
       </div>
-
       <div>
         <label>⏳ 開始前倒數</label>
         <select id="count"><option>30</option><option>60</option><option>90</option></select>
+      </div>
+      <div>
+        <label>🏆 完成條件</label>
+        <select id="targetLines">
+          <option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option>
+          <option value="5">5 線</option><option value="99">全盤</option>
+        </select>
       </div>
       <div>
         <label>⚡ 開獎速度</label>
@@ -62,19 +66,6 @@
           <option value="2500">2.5秒</option><option value="3000">3秒</option><option value="3500">3.5秒</option>
           <option value="4000" selected>4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option>
         </select>
-      </div>
-
-      <div class="full">
-        <label>🏆 完成條件</label>
-        <select id="targetLines">
-          <option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option>
-          <option value="5">5 線</option><option value="99">全盤</option>
-        </select>
-      </div>
-
-      <div class="full">
-        <label>📝 備註（可不填）</label>
-        <input id="roomNote" type="text" placeholder="例如：請提前進入等待室">
       </div>
     </div>
 
@@ -86,7 +77,11 @@
       </div>
     </div>
 
-    <button id="createBtn" class="settings-create-btn" onclick="createRoom()">✨ 建立房間</button>
+    <div class="compact-note">
+      <label>📝 備註（可不填）</label>
+      <input id="roomNote" type="text" placeholder="例如：請提前進入等待室">
+    </div>
+    <button id="createBtn" class="compact-create" onclick="createRoom()">✨ 建立房間</button>
   </div>
 
   <div id="ctl" class="hidden admin-dashboard">
@@ -104,12 +99,11 @@
         <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
         <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
       </div>
-      <div id="st" class="status compact-status">等待建立房間</div>
-      <div class="row room-meta">
+      <div class="room-live-strip">
         <b id="playerCount">👥 目前玩家：0 人</b>
-        <span class="muted">玩家只需點專屬網址並輸入遊戲名</span>
+        <b class="live-current">📣 目前叫號／牌：<span id="num">-</span></b>
+        <b id="st">🟡 等待中</b>
       </div>
-      <div class="compact-current">目前叫號／牌：<span id="num">-</span></div>
     </div>
 
     <div class="card ranking-card">
