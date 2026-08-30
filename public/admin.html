@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.3">
+  <link rel="stylesheet" href="/style.css?v=21.4">
   <title>賓果主控室</title>
 </head>
 <body class="cute-theme admin-page">
@@ -13,7 +13,7 @@
 </div>
 
 <div class="wrap">
-  <div class="card">
+  <div class="card compact-settings-card">
     <h2>🎮 遊戲設定</h2>
     <div class="grid">
       <div>
@@ -39,12 +39,12 @@
           <input id="rid" readonly>
           <button id="newRoomBtn" class="purple" type="button" onclick="generateRoomId()">🔄 產生新房號</button>
         </div>
-        <div class="muted">建立房間前可以重新產生；建立後房號會鎖定。</div>
+        
       </div>
       <div class="full">
         <label>📅 開賽日期時間（可不選）</label>
         <input id="when" type="datetime-local">
-        <div class="muted">有設定：時間到自動開始倒數｜沒設定：由主控按「開始遊戲」</div>
+        
       </div>
       <div>
         <label>⏱️ 遊戲秒數</label>
@@ -71,7 +71,7 @@
       </div>
     </div>
 
-    <div id="pictureOptions" class="full hidden" style="margin-top:18px">
+    <div id="pictureOptions" class="full hidden" style="margin-top:8px">
       <div class="soft-panel">
         <b>🀄 麻將版</b>
         <p class="muted" style="margin:6px 0 10px">開獎池共 42 張；5×5 隨機 25 張、6×6 隨機 36 張。</p>
@@ -79,10 +79,7 @@
       </div>
     </div>
 
-    <br>
-    <label>📝 備註（可不填）</label>
-    <textarea id="roomNote" rows="3" placeholder="例如：請提前進入等待室"></textarea>
-    <br><br>
+    <div class="compact-note"><label>📝 備註（可不填）</label><textarea id="roomNote" rows="1" placeholder="例如：請提前進入等待室"></textarea></div>
     <button id="createBtn" onclick="createRoom()">✨ 建立房間</button>
   </div>
 
@@ -101,12 +98,11 @@
         <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
         <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
       </div>
-      <div id="st" class="status compact-status">等待建立房間</div>
-      <div class="row room-meta">
+      <div class="room-live-strip">
         <b id="playerCount">👥 目前玩家：0 人</b>
-        <span class="muted">玩家只需點專屬網址並輸入遊戲名</span>
+        <b class="live-current">📣 目前叫號／牌：<span id="num">-</span></b>
+        <div id="st" class="status compact-status">🟢 等待中</div>
       </div>
-      <div class="compact-current">目前叫號／牌：<span id="num">-</span></div>
     </div>
 
     <div class="card ranking-card">
