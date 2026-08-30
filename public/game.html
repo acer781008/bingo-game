@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.2">
+  <link rel="stylesheet" href="/style.css?v=21.8">
   <title>賓果遊戲室</title>
 </head>
 <body class="cute-theme player-page">
@@ -127,7 +127,9 @@ function mahjongHTML(item,current=false){
 function renderBoard(size) {
   loadBoardState(size);
   const side = Math.sqrt(size);
-  board.style.gridTemplateColumns = `repeat(${side},1fr)`;
+  board.style.gridTemplateColumns = `repeat(${side}, minmax(0, 1fr))`;
+  board.dataset.side = String(side);
+  board.dataset.version = gameVersion;
   board.innerHTML = "";
 
   boardNumbers.forEach(n => {

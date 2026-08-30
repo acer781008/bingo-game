@@ -203,3 +203,105 @@ body.admin-page #pictureOptions p{margin:3px 0 6px!important}
  body.admin-page .wrap>.card:first-child .grid{grid-template-columns:1fr}
  body.admin-page .room-id-box{grid-column:1}
 }
+
+
+/* ===== V21.8 玩家手機盤面完整顯示修正 ===== */
+#board{
+  width:100%;
+  max-width:700px;
+  min-width:0;
+}
+#board .cell{
+  min-width:0;
+  max-width:100%;
+  width:100%;
+  overflow:hidden;
+}
+#board .picture-cell{
+  min-width:0 !important;
+  width:100% !important;
+}
+#board .mahjong-tile-image{
+  min-width:0 !important;
+  width:100% !important;
+  max-width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+}
+
+@media(max-width:700px){
+  /* 玩家盤面卡片盡量利用手機可用寬度 */
+  body:not(.admin-page) .wrap{
+    width:100% !important;
+    max-width:100% !important;
+    padding-left:6px !important;
+    padding-right:6px !important;
+  }
+  body:not(.admin-page) .card{
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+
+  #board{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+  }
+
+  #board .cell{
+    min-width:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    padding:1px !important;
+    border-width:1.5px !important;
+    border-radius:8px !important;
+    line-height:1 !important;
+  }
+
+  /* 5×5 保持舒服大小 */
+  #board[data-side="5"]{gap:4px !important;}
+  #board[data-side="5"] .cell{font-size:clamp(18px,5vw,25px) !important;}
+
+  /* 麻將 6×6：六欄必須完整塞進手機寬度 */
+  #board[data-side="6"]{gap:3px !important;}
+  #board[data-side="6"] .cell{font-size:clamp(15px,4.1vw,21px) !important;}
+  #board[data-side="6"] .picture-cell{
+    min-height:0 !important;
+    padding:0 !important;
+  }
+  #board[data-side="6"] .mahjong-tile-image{
+    max-height:none !important;
+    width:100% !important;
+    height:100% !important;
+  }
+
+  /* 數字 7×7 */
+  #board[data-side="7"]{gap:2.5px !important;}
+  #board[data-side="7"] .cell{
+    font-size:clamp(13px,3.6vw,18px) !important;
+    border-radius:6px !important;
+    padding:0 !important;
+  }
+
+  /* 數字 8×8 */
+  #board[data-side="8"]{gap:2px !important;}
+  #board[data-side="8"] .cell{
+    font-size:clamp(12px,3.3vw,17px) !important;
+    border-radius:5px !important;
+    padding:0 !important;
+  }
+
+  /* 勾勾也跟著縮，避免在 6/7/8 欄蓋住內容 */
+  #board[data-side="6"] .cell.hit::after{
+    width:18px !important;height:18px !important;
+    font-size:14px !important;top:2px !important;right:2px !important;
+  }
+  #board[data-side="7"] .cell.hit::after,
+  #board[data-side="8"] .cell.hit::after{
+    width:15px !important;height:15px !important;
+    font-size:11px !important;top:1px !important;right:1px !important;
+  }
+}
+
