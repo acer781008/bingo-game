@@ -154,34 +154,11 @@ button:disabled{opacity:.48;cursor:not-allowed}
 @media(max-width:650px){.ranking-head{align-items:stretch;flex-direction:column}.rank-copy-btn{width:100%}}
 
 
-/* V21.4 真正緊湊主控：縮短遊戲設定高度與房間狀態 */
-body.admin-page .compact-settings-card{padding:14px 16px 15px;margin-bottom:12px}
-body.admin-page .compact-settings-card h2{margin:0 0 10px;font-size:20px}
-body.admin-page .compact-settings-card .grid{gap:8px 10px}
-body.admin-page .compact-settings-card label{margin-bottom:3px;font-size:14px;line-height:1.25}
-body.admin-page .compact-settings-card input,
-body.admin-page .compact-settings-card select{padding:9px 10px;min-height:40px;font-size:15px;border-radius:10px}
-body.admin-page .compact-settings-card .inline-actions{gap:7px}
-body.admin-page .compact-settings-card .inline-actions input{font-size:18px;min-height:40px;padding:7px 10px}
-body.admin-page .compact-settings-card .inline-actions button{min-width:150px;width:auto;padding:9px 11px;min-height:40px;font-size:14px}
-body.admin-page .compact-settings-card .muted{font-size:11px;line-height:1.25;margin-top:2px}
-body.admin-page .compact-settings-card #pictureOptions{margin-top:8px!important}
-body.admin-page .compact-settings-card .soft-panel{padding:9px 10px}
-body.admin-page .compact-settings-card .mahjong-preview-grid{gap:5px}
-body.admin-page .compact-settings-card .mahjong-preview img{width:38px;height:49px}
-.compact-note-row{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;margin-top:9px}
-.compact-note-row label{margin:0!important}
-body.admin-page .compact-settings-card .compact-note-row input{width:100%}
-.compact-create-btn{margin-top:9px;padding:10px!important;min-height:42px}
-.room-summary-bar{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px;margin-top:9px;padding:9px 10px;border:1px solid #f1d7e1;border-radius:12px;background:rgba(255,255,255,.74);align-items:center;text-align:center;color:#7b294d;font-size:14px}
-.room-summary-bar b{min-width:0}
-.room-summary-bar #num{font-size:18px;color:#d43278;margin-left:3px}
-.room-summary-bar .admin-current-mahjong{display:inline-block;width:34px!important;height:46px!important;margin:0 0 0 4px;vertical-align:middle}
-body.admin-page .admin-control-card{padding:13px 15px}
-body.admin-page .admin-control-card .control-head{margin-bottom:8px}
-body.admin-page .share-up{margin:5px 0 7px}
-@media(max-width:700px){
- body.admin-page .compact-settings-card{padding:11px}
- .compact-note-row{grid-template-columns:1fr;gap:3px}
- .room-summary-bar{grid-template-columns:1fr;gap:5px;text-align:left}
-}
+/* V21.5 設定區：只靠左右兩欄重新排列縮短高度，不縮字 */
+.admin-page .settings-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 14px;align-items:end}
+.admin-page .settings-grid label{font-size:16px;margin-bottom:6px}
+.admin-page .settings-grid input,.admin-page .settings-grid select{font-size:16px;padding:13px}
+.admin-page .settings-grid .inline-actions input{font-size:20px}
+.admin-page .settings-create-btn{margin-top:14px;font-size:16px;padding:13px}
+.admin-page #pictureOptions{margin-top:12px!important}
+@media(max-width:700px){.admin-page .settings-grid{grid-template-columns:1fr}.admin-page .settings-grid .full{grid-column:1}}
