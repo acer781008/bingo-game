@@ -3,8 +3,166 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.4">
+  <link rel="stylesheet" href="/style.css?v=21.6">
   <title>賓果主控室</title>
+
+<style id="v215-compact-fix">
+#settingsCard{
+  padding:12px 16px !important;
+  margin-bottom:10px !important;
+}
+#settingsCard h2{
+  margin:0 !important;
+  font-size:20px !important;
+}
+.settings-title-row{margin-bottom:8px}
+.version-mark{
+  display:inline-block;
+  margin-left:7px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#fff0f6;
+  color:#d63d7d;
+  font-size:11px;
+  vertical-align:middle;
+}
+.settings-compact-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px 12px;
+}
+.compact-field{
+  display:grid;
+  grid-template-columns:128px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  min-height:42px;
+}
+.compact-field label{
+  margin:0 !important;
+  font-size:14px !important;
+  white-space:nowrap;
+}
+.compact-field input,
+.compact-field select{
+  min-height:36px !important;
+  height:36px !important;
+  padding:5px 9px !important;
+  font-size:14px !important;
+  border-radius:9px !important;
+}
+.compact-span-2{grid-column:1/-1}
+.room-number-compact{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 180px;
+  gap:8px;
+}
+.room-number-compact #rid{
+  text-align:center;
+  font-size:18px !important;
+  font-weight:900;
+  letter-spacing:4px;
+}
+.room-number-compact button{
+  min-height:36px !important;
+  height:36px !important;
+  padding:5px 10px !important;
+  font-size:14px !important;
+  border-radius:9px !important;
+}
+.compact-create-v215{
+  margin-top:8px !important;
+  min-height:38px !important;
+  height:38px !important;
+  padding:6px 10px !important;
+  border-radius:9px !important;
+}
+.compact-picture-options{margin-top:7px}
+.compact-picture-options .soft-panel{padding:8px 10px !important}
+.compact-picture-options .mahjong-preview-grid{margin-top:6px}
+.room-live-strip{
+  padding:7px 9px !important;
+  margin-top:7px !important;
+  min-height:38px !important;
+}
+.ranking-card{overflow-x:hidden !important}
+.ranking-card .leader{
+  min-width:0 !important;
+  width:100% !important;
+  table-layout:fixed !important;
+}
+.ranking-card .leader th,.ranking-card .leader td{
+  white-space:normal !important;
+  padding:7px 3px !important;
+  font-size:12px !important;
+}
+.ranking-card .leader th:nth-child(1),.ranking-card .leader td:nth-child(1){width:11% !important}
+.ranking-card .leader th:nth-child(2),.ranking-card .leader td:nth-child(2){width:27% !important}
+.ranking-card .leader th:nth-child(3),.ranking-card .leader td:nth-child(3){width:20% !important}
+.ranking-card .leader th:nth-child(4),.ranking-card .leader td:nth-child(4){width:17% !important}
+.ranking-card .leader th:nth-child(5),.ranking-card .leader td:nth-child(5){width:25% !important}
+@media(max-width:850px){
+  .settings-compact-grid{grid-template-columns:1fr}
+  .compact-span-2{grid-column:1}
+}
+@media(max-width:520px){
+  .compact-field{grid-template-columns:1fr;gap:3px}
+  .room-number-compact{grid-template-columns:1fr}
+  .room-number-compact button{height:auto !important}
+}
+</style>
+
+
+<style id="v216-responsive-layout">
+/* V21.6 桌機：設定左上、房間控制左下、即時排行右側 */
+@media (min-width:901px){
+  body.admin-page .wrap{
+    max-width:1320px !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1.55fr) minmax(390px,.95fr) !important;
+    grid-template-rows:auto auto !important;
+    gap:12px 14px !important;
+    align-items:start !important;
+  }
+  body.admin-page .wrap > #settingsCard{
+    grid-column:1 !important;
+    grid-row:1 !important;
+    margin:0 !important;
+  }
+  body.admin-page .wrap > #ctl.admin-dashboard{
+    grid-column:1 / -1 !important;
+    grid-row:2 !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1.55fr) minmax(390px,.95fr) !important;
+    gap:14px !important;
+    align-items:start !important;
+  }
+  body.admin-page .wrap > #ctl.hidden{display:none !important}
+  body.admin-page #ctl > .room-control-card{
+    grid-column:1 !important;
+    margin:0 !important;
+  }
+  body.admin-page #ctl > .ranking-card{
+    grid-column:2 !important;
+    grid-row:1 !important;
+    margin-top:calc(-1 * (var(--settings-height, 0px) + 12px)) !important;
+  }
+  /* 排行榜直接往上對齊設定頂端；由 JS 寫入精準高度 */
+  body.admin-page #ctl > .ranking-card.v216-ranked{
+    transform:translateY(calc(-1 * var(--v216-up, 0px))) !important;
+  }
+}
+/* 手機：完全沿用目前的上下排列 */
+@media (max-width:900px){
+  body.admin-page .wrap{display:block !important}
+  body.admin-page #ctl.admin-dashboard{display:block !important}
+  body.admin-page #ctl.hidden{display:none !important}
+  body.admin-page #ctl > .ranking-card{transform:none !important;margin-top:12px !important}
+}
+</style>
+
 </head>
 <body class="cute-theme admin-page">
 <div class="top">
@@ -13,10 +171,13 @@
 </div>
 
 <div class="wrap">
-  <div class="card">
-    <h2>🎮 遊戲設定</h2>
-    <div class="grid">
-      <div>
+  <div class="card" id="settingsCard">
+    <div class="settings-title-row">
+      <h2>🎮 遊戲設定 <small class="version-mark">V21.6</small></h2>
+    </div>
+
+    <div class="settings-compact-grid">
+      <div class="compact-field">
         <label>遊戲版本</label>
         <select id="ver">
           <option value="number">🔢 數字版</option>
@@ -24,7 +185,8 @@
           <option value="farm" disabled>🌱 種菜版（預留）</option>
         </select>
       </div>
-      <div>
+
+      <div class="compact-field">
         <label>盤面格數</label>
         <select id="size">
           <option value="25">5×5</option>
@@ -33,33 +195,31 @@
           <option value="64">8×8</option>
         </select>
       </div>
-      <div class="full room-id-box">
+
+      <div class="compact-field compact-span-2">
         <label>🔢 房間號碼</label>
-        <div class="inline-actions">
+        <div class="room-number-compact">
           <input id="rid" readonly>
           <button id="newRoomBtn" class="purple" type="button" onclick="generateRoomId()">🔄 產生新房號</button>
         </div>
       </div>
-      <div>
-        <label>📅 開賽日期時間（可不選）</label>
+
+      <div class="compact-field">
+        <label>📅 開賽時間</label>
         <input id="when" type="datetime-local">
       </div>
-      <div>
+
+      <div class="compact-field">
         <label>⏱️ 遊戲秒數</label>
         <select id="game"><option>60</option><option selected>90</option><option>120</option></select>
       </div>
-      <div>
+
+      <div class="compact-field">
         <label>⏳ 開始前倒數</label>
         <select id="count"><option>30</option><option>60</option><option>90</option></select>
       </div>
-      <div>
-        <label>🏆 完成條件</label>
-        <select id="targetLines">
-          <option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option>
-          <option value="5">5 線</option><option value="99">全盤</option>
-        </select>
-      </div>
-      <div>
+
+      <div class="compact-field">
         <label>⚡ 開獎速度</label>
         <select id="speed">
           <option value="1000">1秒</option><option value="1500">1.5秒</option><option value="2000">2秒</option>
@@ -67,23 +227,31 @@
           <option value="4000" selected>4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option>
         </select>
       </div>
+
+      <div class="compact-field">
+        <label>🏆 完成條件</label>
+        <select id="targetLines">
+          <option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option>
+          <option value="5">5 線</option><option value="99">全盤</option>
+        </select>
+      </div>
+
+      <div class="compact-field">
+        <label>📝 備註</label>
+        <input id="roomNote" type="text" placeholder="可不填">
+      </div>
     </div>
 
-    <div id="pictureOptions" class="full hidden" style="margin-top:18px">
+    <div id="pictureOptions" class="hidden compact-picture-options">
       <div class="soft-panel">
         <b>🀄 麻將版</b>
-        <p class="muted" style="margin:6px 0 10px">開獎池共 42 張；5×5 隨機 25 張、6×6 隨機 36 張。</p>
+        <span class="muted"> 開獎池42張｜5×5取25張｜6×6取36張</span>
         <div id="mahjongPreview" class="mahjong-preview-grid"></div>
       </div>
     </div>
 
-    <div class="compact-note">
-      <label>📝 備註（可不填）</label>
-      <input id="roomNote" type="text" placeholder="例如：請提前進入等待室">
-    </div>
-    <button id="createBtn" class="compact-create" onclick="createRoom()">✨ 建立房間</button>
+    <button id="createBtn" class="compact-create-v215" onclick="createRoom()">✨ 建立房間</button>
   </div>
-
   <div id="ctl" class="hidden admin-dashboard">
     <div class="card admin-control-card">
       <div class="control-head">
@@ -288,5 +456,27 @@ socket.on('gameEnded',d=>{el.status.textContent='🔴 已結束｜10 分鐘後�
 
 generateRoomId();
 </script>
+
+<script id="v216-rank-position">
+(function(){
+  function placeRank(){
+    const settings=document.getElementById('settingsCard');
+    const rank=document.querySelector('#ctl .ranking-card');
+    if(!settings||!rank) return;
+    if(window.innerWidth>900){
+      rank.classList.add('v216-ranked');
+      rank.style.setProperty('--v216-up',(settings.offsetHeight+12)+'px');
+    }else{
+      rank.classList.remove('v216-ranked');
+      rank.style.removeProperty('--v216-up');
+    }
+  }
+  window.addEventListener('load',placeRank);
+  window.addEventListener('resize',placeRank);
+  setTimeout(placeRank,200);
+  setTimeout(placeRank,800);
+})();
+</script>
+
 </body>
 </html>
