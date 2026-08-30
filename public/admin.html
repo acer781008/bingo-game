@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.2">
+  <link rel="stylesheet" href="/style.css?v=21.3">
   <title>賓果主控室</title>
 </head>
 <body class="cute-theme admin-page">
@@ -86,8 +86,8 @@
     <button id="createBtn" onclick="createRoom()">✨ 建立房間</button>
   </div>
 
-  <div id="ctl" class="hidden">
-    <div class="card">
+  <div id="ctl" class="hidden admin-dashboard">
+    <div class="card admin-control-card">
       <div class="control-head">
         <div><label>房間</label><b id="show" class="big-room"></b></div>
         <div class="control-buttons">
@@ -97,7 +97,7 @@
         </div>
       </div>
 
-      <div class="share-buttons compact-share">
+      <div class="share-buttons compact-share share-up">
         <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
         <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
       </div>
@@ -109,8 +109,8 @@
       <div class="compact-current">目前叫號／牌：<span id="num">-</span></div>
     </div>
 
-    <div class="card">
-      <div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">🖼️ 複製整頁排行榜</button></div>
+    <div class="card ranking-card">
+      <div class="ranking-head"><h2>🏆 即時排行榜</h2><button class="purple rank-copy-btn" onclick="copyRank()">📋 複製排行榜</button></div>
       <table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table>
     </div>
   </div>
@@ -224,8 +224,13 @@ function playerUrl(){ return location.origin+'/index.html?room='+encodeURICompon
 function copyPlayerUrl(){ copyText(playerUrl(),'已複製玩家連結'); }
 function copyShareText(){ copyText(shareText||buildShareText({roomId:activeRoom,scheduledAt:el.scheduledAt.value?new Date(el.scheduledAt.value).getTime():null}),'已複製分享文字'); }
 
+function formatElapsed(sec){
+  if(sec===null||sec===undefined) return '—';
+  const m=Math.floor(sec/60), ss=Math.floor(sec%60);
+  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
 function renderRanking(list){
-  el.rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank<4?['🥇','🥈','🥉'][p.rank-1]:p.rank}</td><td>${esc(p.name)}</td><td>${p.hitCount}</td><td>${p.bingoLines}</td><td>${p.finishAt?new Date(p.finishAt).toLocaleTimeString('zh-TW',{hour12:false}):'—'}</td></tr>`).join('');
+  el.rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank}</td><td>${esc(p.name)}</td><td>點擊${p.hitCount}格</td><td>${p.bingoLines}條</td><td>${p.finishSeconds!=null?'時間'+formatElapsed(p.finishSeconds):'—'}</td></tr>`).join('');
 }
 function phaseText(p){return ({waiting:'🟡 等待中',countdown:'🟠 倒數中',playing:'🟢 遊戲中',ended:'🔴 已結束'})[p]||p;}
 function showCountdown(endAt){
@@ -268,19 +273,13 @@ async function deleteRoom(){
 }
 
 async function copyRank(){
-  const rows=[...el.rankBody.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.innerText.trim()));
+  const rows=[...el.rankBody.querySelectorAll('tr')];
   if(!rows.length)return alert('目前還沒有排行榜資料');
-  const width=1000, margin=40, rowH=58, headH=150, tableH=60;
-  const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=headH+tableH+rows.length*rowH+45;
-  const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff8fb';ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='#7b294d';ctx.font='bold 38px sans-serif';ctx.textAlign='center';ctx.fillText('🏆 賓果排行榜',width/2,52);
-  ctx.textAlign='left';ctx.font='22px sans-serif';ctx.fillStyle='#333';ctx.fillText('🔢 房間：'+activeRoom,margin,100);
-  const headers=['排名','玩家','點擊格數','賓果線','完成時間'], col=[100,300,170,150,200], startY=headH;
-  let x=margin;ctx.font='bold 20px sans-serif';headers.forEach((h,i)=>{ctx.fillText(h,x+8,startY+38);x+=col[i]});
-  ctx.font='19px sans-serif';rows.forEach((r,ri)=>{let xx=margin,y=startY+tableH+ri*rowH+36;r.forEach((v,i)=>{ctx.fillText(v,xx+8,y);xx+=col[i]});ctx.strokeStyle='#ead5de';ctx.beginPath();ctx.moveTo(margin,y+17);ctx.lineTo(width-margin,y+17);ctx.stroke()});
-  const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
-  try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);alert('✅ 已複製整頁排行榜圖片')}
-  catch(e){const a=document.createElement('a');a.download=`bingo-ranking-${activeRoom}.png`;a.href=canvas.toDataURL('image/png');a.click();alert('✅ 已下載排行榜圖片')}
+  const lines=rows.map(tr=>{
+    const c=[...tr.children].map(td=>td.innerText.trim());
+    return `排名${c[0]}｜${c[1]}｜${c[2]}｜${c[3]}｜${c[4]}`;
+  });
+  await copyText(lines.join('\n'),'已複製排行榜');
 }
 
 socket.on('roomState',d=>{activeItems=d.items||[];if(d.currentNumber){const item=activeItems.find(x=>x.id===d.currentNumber);el.currentNumber.innerHTML=item?adminMahjongHTML(item):d.currentNumber}renderRanking(d.ranking||[]);refreshRoom()});

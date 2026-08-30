@@ -68,6 +68,7 @@ function roomInfo(room) {
     countdownEndsAt: room.countdownEndsAt || null,
     gameSeconds: room.gameSeconds,
     gameEndsAt: room.gameEndsAt || null,
+    gameStartedAt: room.gameStartedAt || null,
     drawIntervalMs: room.drawIntervalMs,
     currentNumber: room.currentNumber || null,
     drawToken: room.drawToken || 0,
@@ -88,7 +89,8 @@ function ranking(room) {
       name: p.name,
       hitCount: p.hitCount,
       bingoLines: p.bingoLines,
-      finishAt: p.finishAt || null
+      finishAt: p.finishAt || null,
+      finishSeconds: (p.finishAt && room.gameStartedAt) ? Math.max(0, Math.round((p.finishAt-room.gameStartedAt)/1000)) : null
     }));
 }
 
@@ -148,7 +150,8 @@ function startGame(room) {
   if (!room || room.phase !== "countdown") return;
 
   room.phase = "playing";
-  room.gameEndsAt = Date.now() + room.gameSeconds * 1000;
+  room.gameStartedAt = Date.now();
+  room.gameEndsAt = room.gameStartedAt + room.gameSeconds * 1000;
 
   io.to(room.id).emit("gameStarted", {
     gameEndsAt: room.gameEndsAt
@@ -301,6 +304,7 @@ app.post("/api/admin/create-room", (req, res) => {
     phase: "waiting",
     countdownEndsAt: null,
     gameEndsAt: null,
+    gameStartedAt: null,
     currentNumber: null,
     drawToken: 0,
     drawn: [],

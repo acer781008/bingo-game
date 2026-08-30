@@ -214,15 +214,20 @@ function speechText(value) {
   if (/^[1-9]萬$/.test(name)) return digit[name[0]] + "萬";
   if (/^[1-9]筒$/.test(name)) return digit[name[0]] + "筒";
   if (/^[1-9](條|索)$/.test(name)) return digit[name[0]] + "條";
-  if (name === "白") return "白板";
-  return name;
+  const fullNames = {
+    "東":"東風","南":"南風","西":"西風","北":"北風",
+    "中":"紅中","發":"發財","白":"白板",
+    "春":"春花","夏":"夏花","秋":"秋花","冬":"冬花",
+    "梅":"梅花","蘭":"蘭花","菊":"菊花","竹":"竹花"
+  };
+  return fullNames[name] || name;
 }
 function speak(number) {
   if (!voiceOn || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(speechText(number));
   utterance.lang = "zh-TW";
-  utterance.rate = 0.9;
+  utterance.rate = gameVersion === "picture" ? 0.78 : 0.9;
   speechSynthesis.speak(utterance);
 }
 
@@ -235,7 +240,7 @@ function renderRanking(list) {
       }[c]))}</td>
       <td>${p.hitCount}</td>
       <td>${p.bingoLines}</td>
-      <td>${p.finishAt ? new Date(p.finishAt).toLocaleTimeString("zh-TW",{hour12:false}) : "—"}</td>
+      <td>${p.finishSeconds != null ? String(Math.floor(p.finishSeconds/60)).padStart(2,"0")+":"+String(p.finishSeconds%60).padStart(2,"0") : "—"}</td>
     </tr>
   `).join("");
 }
