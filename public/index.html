@@ -3,31 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=21">
   <title>賓果遊戲</title>
 </head>
-<body>
-<div class="top"><h1>🎰 賓果遊戲</h1></div>
+<body class="cute-theme player-page">
+<div class="top">
+  <h1>🎰 賓果遊戲</h1>
+  <button class="lobby-btn" onclick="lobbyComingSoon()">🏠 返回遊戲大廳</button>
+</div>
 
 <div class="wrap">
   <div class="card login">
+    <div class="welcome-animal">🐰 🐻 🐱</div>
     <h2>加入遊戲</h2>
+    <p id="roomHint" class="room-hint"></p>
 
-    <label>玩家名稱</label>
-    <input id="playerName" autocomplete="off" placeholder="請輸入玩家名稱">
-
+    <label>🎮 遊戲名</label>
+    <input id="playerName" autocomplete="off" maxlength="30" placeholder="請輸入遊戲名">
     <br><br>
-
-    <label>房間號碼</label>
-    <input id="roomId" autocomplete="off" placeholder="管理員提供的房間號碼">
-
-    <br><br>
-
-    <label>房間密碼</label>
-    <input id="playerPassword" type="password" placeholder="管理員提供的房間密碼">
-
-    <br><br>
-
     <button id="joinBtn">🚀 加入遊戲</button>
     <p id="joinStatus" class="muted">等待連線…</p>
   </div>
@@ -35,72 +28,48 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const socket = io();
+const socket=io();
+const playerName=document.getElementById('playerName');
+const joinBtn=document.getElementById('joinBtn');
+const joinStatus=document.getElementById('joinStatus');
+const roomHint=document.getElementById('roomHint');
+const params=new URLSearchParams(location.search);
+const roomId=(params.get('room')||'').trim();
 
-const playerName = document.getElementById("playerName");
-const roomId = document.getElementById("roomId");
-const playerPassword = document.getElementById("playerPassword");
-const joinBtn = document.getElementById("joinBtn");
-const joinStatus = document.getElementById("joinStatus");
-
-function getClientId() {
-  let id = sessionStorage.getItem("bingoClientId");
-  if (!id) {
-    id = (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random());
-    sessionStorage.setItem("bingoClientId", id);
-  }
+function lobbyComingSoon(){alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。');}
+function getClientId(){
+  let id=sessionStorage.getItem('bingoClientId');
+  if(!id){id=crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random();sessionStorage.setItem('bingoClientId',id)}
   return id;
 }
 
-const params = new URLSearchParams(location.search);
-if (params.get("room")) roomId.value = params.get("room");
+if(roomId){
+  roomHint.textContent='🔢 房間 '+roomId+'｜輸入遊戲名即可加入';
+}else{
+  roomHint.textContent='⚠️ 請使用管理員提供的玩家專屬連結進入';
+  joinBtn.disabled=true;
+}
 
-socket.on("connect", () => {
-  joinStatus.textContent = "✅ 已連線，可以加入房間。";
-  joinBtn.disabled = false;
+socket.on('connect',()=>{
+  joinStatus.textContent=roomId?'✅ 已連線，可以加入遊戲。':'請從玩家專屬網址進入。';
+  if(roomId)joinBtn.disabled=false;
 });
+socket.on('connect_error',()=>{joinStatus.textContent='❌ 無法連到遊戲主機。';if(roomId)joinBtn.disabled=false});
 
-socket.on("connect_error", () => {
-  joinStatus.textContent = "❌ 無法連到遊戲主機。";
-  joinBtn.disabled = false;
-});
+function join(){
+  const name=playerName.value.trim();
+  if(!roomId)return alert('❌ 請使用管理員提供的玩家專屬網址進入');
+  if(!name)return alert('❌ 請輸入遊戲名');
+  joinBtn.disabled=true;joinStatus.textContent='正在加入遊戲…';
+  socket.emit('joinRoom',{roomId,name,clientId:getClientId()});
+}
+joinBtn.addEventListener('click',join);
+playerName.addEventListener('keydown',e=>{if(e.key==='Enter')join()});
 
-joinBtn.addEventListener("click", () => {
-  const name = playerName.value.trim();
-  const room = roomId.value.trim();
-  const password = playerPassword.value;
-
-  if (!name) return alert("❌ 請輸入玩家名稱");
-  if (!room) return alert("❌ 請輸入房間號碼");
-  if (!password) return alert("❌ 請輸入房間密碼");
-
-  joinBtn.disabled = true;
-  joinStatus.textContent = "正在加入房間…";
-
-  socket.emit("joinRoom", {
-    roomId: room,
-    name,
-    password,
-    clientId: getClientId()
-  });
-});
-
-socket.on("joinError", message => {
-  joinBtn.disabled = false;
-  joinStatus.textContent = "❌ " + message;
-  alert("❌ " + message);
-});
-
-socket.on("joinSuccess", data => {
-  sessionStorage.setItem("bingoPlayer", JSON.stringify({
-    clientId: getClientId(),
-    name: playerName.value.trim(),
-    roomId: data.roomId,
-    password: playerPassword.value,
-    size: data.size
-  }));
-
-  location.href = "/game.html";
+socket.on('joinError',message=>{joinBtn.disabled=false;joinStatus.textContent='❌ '+message;alert('❌ '+message)});
+socket.on('joinSuccess',data=>{
+  sessionStorage.setItem('bingoPlayer',JSON.stringify({clientId:getClientId(),name:playerName.value.trim(),roomId:data.roomId,size:data.size}));
+  location.href='/game.html';
 });
 </script>
 </body>

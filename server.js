@@ -15,6 +15,14 @@ const adminSessions = new Set();
 const rooms = new Map();
 const timers = new Map();
 
+function generateRoomId() {
+  let id;
+  do {
+    id = String(Math.floor(100000 + Math.random() * 900000));
+  } while (rooms.has(id));
+  return id;
+}
+
 
 app.use(express.json());
 
@@ -231,15 +239,21 @@ const MAHJONG_ITEMS = [
   {id:"bambooFlower",face:"竹",group:"花",name:"竹",file:"42-bamboo.svg"}
 ];
 
+app.get("/api/admin/new-room-id", (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ success: false, message: "未登入管理員" });
+  res.json({ success: true, roomId: generateRoomId() });
+});
+
 app.post("/api/admin/create-room", (req, res) => {
   if (!isAdmin(req)) {
     return res.status(401).json({ success: false, message: "未登入管理員" });
   }
 
-  const roomId = String(req.body.roomId || "").trim();
-  const playerPassword = String(req.body.playerPassword || "").trim();
+  const roomId = String(req.body.roomId || generateRoomId()).trim();
   const size = Number(req.body.size);
-  const scheduledAt = Number(req.body.scheduledAt);
+  const scheduledAt = (req.body.scheduledAt === null || req.body.scheduledAt === undefined || req.body.scheduledAt === "")
+    ? null
+    : Number(req.body.scheduledAt);
   const countdownSeconds = Number(req.body.countdownSeconds);
   const gameSeconds = Number(req.body.gameSeconds);
   const drawIntervalMs = Number(req.body.drawIntervalMs);
@@ -249,7 +263,6 @@ app.post("/api/admin/create-room", (req, res) => {
   const theme = version === "picture" ? "mahjong" : null;
 
   if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
-  if (!playerPassword) return res.status(400).json({ success: false, message: "請輸入房間密碼" });
   if (rooms.has(roomId)) return res.status(400).json({ success: false, message: "房間號碼已存在" });
   if (![25, 36, 49, 64].includes(size)) return res.status(400).json({ success: false, message: "盤面格數錯誤" });
   if (version === "picture" && ![25,36].includes(size)) return res.status(400).json({success:false,message:"麻將版目前只開放 5×5、6×6"});
@@ -259,16 +272,15 @@ app.post("/api/admin/create-room", (req, res) => {
   if (![1000,1500,2000,2500,3000,3500,4000,4500,5000].includes(drawIntervalMs)) {
     return res.status(400).json({ success: false, message: "開獎速度錯誤" });
   }
-  if (!Number.isFinite(scheduledAt)) {
-    return res.status(400).json({ success: false, message: "請選擇正確的開賽日期時間" });
+  if (scheduledAt !== null && !Number.isFinite(scheduledAt)) {
+    return res.status(400).json({ success: false, message: "開賽日期時間格式錯誤" });
   }
-  if (scheduledAt <= Date.now()) {
+  if (scheduledAt !== null && scheduledAt <= Date.now()) {
     return res.status(400).json({ success: false, message: "開賽日期時間必須晚於現在" });
   }
 
   const room = {
     id: roomId,
-    playerPassword,
     version,
     theme,
     items: version === "picture" ? MAHJONG_ITEMS.slice() : null,
@@ -293,10 +305,12 @@ app.post("/api/admin/create-room", (req, res) => {
   rooms.set(roomId, room);
 
   const t = getTimers(roomId);
-  t.schedule = setTimeout(() => {
-    const current = rooms.get(roomId);
-    if (current && current.phase === "waiting") startCountdown(current);
-  }, Math.max(0, scheduledAt - Date.now()));
+  if (scheduledAt !== null) {
+    t.schedule = setTimeout(() => {
+      const current = rooms.get(roomId);
+      if (current && current.phase === "waiting") startCountdown(current);
+    }, Math.max(0, scheduledAt - Date.now()));
+  }
 
   res.json({
     success: true,
@@ -319,6 +333,17 @@ app.get("/api/admin/room/:roomId", (req, res) => {
       ranking: ranking(room)
     }
   });
+});
+
+app.post("/api/admin/start-room/:roomId", (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ success: false, message: "未登入管理員" });
+  const room = rooms.get(String(req.params.roomId || "").trim());
+  if (!room) return res.status(404).json({ success: false, message: "找不到房間" });
+  if (room.phase !== "waiting") {
+    return res.status(400).json({ success: false, message: room.phase === "countdown" ? "遊戲已在倒數" : room.phase === "playing" ? "遊戲已開始" : "遊戲已結束" });
+  }
+  startCountdown(room);
+  res.json({ success: true, room: roomInfo(room) });
 });
 
 app.post("/api/admin/end-room/:roomId", (req, res) => {
@@ -357,7 +382,7 @@ io.on("connection", socket => {
     });
   });
 
-  socket.on("joinRoom", ({ roomId, name, password, clientId }) => {
+  socket.on("joinRoom", ({ roomId, name, clientId }) => {
     const room = rooms.get(String(roomId || "").trim());
     const cleanName = String(name || "").trim();
     const cleanClientId = String(clientId || "").trim();
@@ -365,10 +390,6 @@ io.on("connection", socket => {
     if (!room) return socket.emit("joinError", "找不到這個房間");
     if (!cleanName) return socket.emit("joinError", "請輸入玩家名稱");
     if (!cleanClientId) return socket.emit("joinError", "玩家識別資料遺失，請重新整理後再試");
-    if (String(password || "") !== room.playerPassword) {
-      return socket.emit("joinError", "房間密碼錯誤");
-    }
-
     const existing = room.players.get(cleanClientId);
 
     // 遊戲正式開始後：只有開始前已經加入過的同一位玩家可以重新連線。

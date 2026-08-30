@@ -1,330 +1,299 @@
-<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><title>賓果主控室</title></head><body><div class="top"><h1>🎰 賓果遊戲｜主控室</h1></div><div class="wrap"><div class="card"><h2>🎮 遊戲設定</h2><div class="grid"><div><label>遊戲版本</label><select id="ver"><option value="number">🔢 數字版</option><option value="picture">🀄 圖案版（麻將）</option><option disabled>🌱 種菜版（之後新增）</option></select></div><div><label>盤面格數</label><select id="size"><option value="25">5×5</option><option value="36">6×6</option><option value="49">7×7</option><option value="64">8×8</option></select></div><div><label>房間號碼</label><input id="rid" placeholder="管理員自設"></div><div><label>房間密碼</label><input id="rpass" placeholder="管理員自設"></div><div class="full"><label>📅 開賽日期時間</label><input id="when" type="datetime-local"></div><div><label>⏱️ 遊戲秒數</label><select id="game"><option>60</option><option>90</option><option>120</option></select></div><div><label>⏳ 開始前倒數</label><select id="count"><option>30</option><option>60</option><option>90</option></select></div><div><label>🏆 完成條件</label><select id="targetLines"><option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option><option value="5">5 線</option><option value="99">全盤</option></select></div><div><label>⚡ 開獎速度</label><select id="speed"><option value="1000">1秒</option><option value="1500">1.5秒</option><option value="2000">2秒</option><option value="2500">2.5秒</option><option value="3000">3秒</option><option value="3500">3.5秒</option><option value="4000">4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option></select></div></div><div id="pictureOptions" class="full hidden" style="margin-top:18px">
-  <div style="padding:16px;border:1px solid #efd4df;border-radius:16px;background:#fff8fb">
-    <b>🀄 圖案主題：麻將版</b>
-    <p class="muted" style="margin:6px 0 10px">麻將版目前先測試 5×5，共 25 張經典麻將牌。</p>
-    <div id="mahjongPreview" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px"></div>
-  </div>
-</div><br><br><br>
-    <label>備註（可不填）</label>
-    <textarea id="roomNote" rows="3" placeholder="例如：請提前 5 分鐘進入房間"></textarea>
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css?v=21">
+  <title>賓果主控室</title>
+</head>
+<body class="cute-theme admin-page">
+<div class="top">
+  <h1>🎰 賓果遊戲｜主控室</h1>
+  <button class="lobby-btn" onclick="lobbyComingSoon()">🏠 返回遊戲大廳</button>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>🎮 遊戲設定</h2>
+    <div class="grid">
+      <div>
+        <label>遊戲版本</label>
+        <select id="ver">
+          <option value="number">🔢 數字版</option>
+          <option value="picture">🀄 麻將版</option>
+        </select>
+      </div>
+      <div>
+        <label>盤面格數</label>
+        <select id="size">
+          <option value="25">5×5</option>
+          <option value="36">6×6</option>
+          <option value="49">7×7</option>
+          <option value="64">8×8</option>
+        </select>
+      </div>
+      <div class="full room-id-box">
+        <label>🔢 房間號碼</label>
+        <div class="inline-actions">
+          <input id="rid" readonly>
+          <button id="newRoomBtn" class="purple" type="button" onclick="generateRoomId()">🔄 產生新房號</button>
+        </div>
+        <div class="muted">建立房間前可以重新產生；建立後房號會鎖定。</div>
+      </div>
+      <div class="full">
+        <label>📅 開賽日期時間（可不選）</label>
+        <input id="when" type="datetime-local">
+        <div class="muted">有設定：時間到自動開始倒數｜沒設定：由主控按「開始遊戲」</div>
+      </div>
+      <div>
+        <label>⏱️ 遊戲秒數</label>
+        <select id="game"><option>60</option><option selected>90</option><option>120</option></select>
+      </div>
+      <div>
+        <label>⏳ 開始前倒數</label>
+        <select id="count"><option>30</option><option>60</option><option>90</option></select>
+      </div>
+      <div>
+        <label>🏆 完成條件</label>
+        <select id="targetLines">
+          <option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option>
+          <option value="5">5 線</option><option value="99">全盤</option>
+        </select>
+      </div>
+      <div>
+        <label>⚡ 開獎速度</label>
+        <select id="speed">
+          <option value="1000">1秒</option><option value="1500">1.5秒</option><option value="2000">2秒</option>
+          <option value="2500">2.5秒</option><option value="3000">3秒</option><option value="3500">3.5秒</option>
+          <option value="4000" selected>4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="pictureOptions" class="full hidden" style="margin-top:18px">
+      <div class="soft-panel">
+        <b>🀄 麻將版</b>
+        <p class="muted" style="margin:6px 0 10px">開獎池共 42 張；5×5 隨機 25 張、6×6 隨機 36 張。</p>
+        <div id="mahjongPreview" class="mahjong-preview-grid"></div>
+      </div>
+    </div>
+
+    <br>
+    <label>📝 備註（可不填）</label>
+    <textarea id="roomNote" rows="3" placeholder="例如：請提前進入等待室"></textarea>
     <br><br>
-<button onclick="createRoom()">建立房間</button></div><div id="ctl" class="hidden"><div class="card"><div class="row"><div><label>房間</label><b id="show"></b></div><div><label>玩家網址</label><input id="url" readonly>
-      <div id="shareInfo" style="margin-top:14px;padding:14px;border:1px solid #efd4df;border-radius:14px;white-space:pre-line;line-height:1.8;background:#fff8fb"></div>
-      <br></div><div><button class="purple" onclick="copyUrl()">複製玩家網址</button></div></div><div id="st" class="status">等待建立房間</div><div class="row" style="margin:12px 0"><b id="playerCount">👥 目前玩家：0 人</b><div><button onclick="endRoom()">⏹️ 立即結束遊戲</button> <button class="purple" onclick="deleteRoom()">🗑️ 刪除房間</button></div></div><div id="num" class="number">-</div></div><div class="card"><div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">🖼️ 複製整頁排行榜</button></div><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table></div></div></div><script src="/socket.io/socket.io.js"></script><script>
+    <button id="createBtn" onclick="createRoom()">✨ 建立房間</button>
+  </div>
+
+  <div id="ctl" class="hidden">
+    <div class="card">
+      <div class="control-head">
+        <div><label>房間</label><b id="show" class="big-room"></b></div>
+        <div class="control-buttons">
+          <button id="startBtn" onclick="startRoom()">▶ 開始遊戲</button>
+          <button onclick="endRoom()">⏹️ 立即結束</button>
+          <button class="purple" onclick="deleteRoom()">🗑️ 刪除房間</button>
+        </div>
+      </div>
+
+      <label>玩家專屬網址</label>
+      <input id="url" readonly>
+      <div class="share-buttons">
+        <button onclick="copyPlayerUrl()">🔗 複製玩家連結</button>
+        <button class="purple" onclick="copyShareText()">📋 複製分享文字</button>
+      </div>
+      <div id="shareInfo" class="share-info"></div>
+
+      <div id="st" class="status">等待建立房間</div>
+      <div class="row room-meta">
+        <b id="playerCount">👥 目前玩家：0 人</b>
+        <span class="muted">玩家只需點專屬網址並輸入遊戲名</span>
+      </div>
+      <div id="num" class="number">-</div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h2>🏆 即時排行榜</h2><button class="purple" onclick="copyRank()">🖼️ 複製整頁排行榜</button></div>
+      <table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
 const socket = io();
-const $ = (id) => document.getElementById(id);
-
+const $ = id => document.getElementById(id);
 const el = {
-  ver: $("ver"),
-  pictureOptions: $("pictureOptions"),
-  mahjongPreview: $("mahjongPreview"),
-  size: $("size"),
-  roomId: $("rid"),
-  playerPassword: $("rpass"),
-  scheduledAt: $("when"),
-  gameSeconds: $("game"),
-  countdownSeconds: $("count"),
-  drawIntervalMs: $("speed"),
-  control: $("ctl"),
-  showRoom: $("show"),
-  playerUrl: $("url"),
-  status: $("st"),
-  currentNumber: $("num"),
-  rankBody: $("rb"),
-  roomNote: $("roomNote"),
-  shareInfo: $("shareInfo"),
-  targetLines: $("targetLines"),
-  playerCount: $("playerCount")
+  ver:$('ver'), pictureOptions:$('pictureOptions'), mahjongPreview:$('mahjongPreview'), size:$('size'), roomId:$('rid'),
+  newRoomBtn:$('newRoomBtn'), scheduledAt:$('when'), gameSeconds:$('game'), countdownSeconds:$('count'),
+  drawIntervalMs:$('speed'), control:$('ctl'), showRoom:$('show'), playerUrl:$('url'), status:$('st'),
+  currentNumber:$('num'), rankBody:$('rb'), roomNote:$('roomNote'), shareInfo:$('shareInfo'),
+  targetLines:$('targetLines'), playerCount:$('playerCount'), startBtn:$('startBtn'), createBtn:$('createBtn')
 };
+let activeRoom='';
+let activeItems=[];
+let countdownTimer=null;
+let shareText='';
 
-let activeRoom = "";
-let activeItems = [];
-let countdownTimer = null;
-
-const MAHJONG_PREVIEW = [
-  {file:"08-characters-1.svg",name:"1萬"},
-  {file:"17-circles-1.svg",name:"1筒"},
-  {file:"26-bamboos-1.svg",name:"1條"},
-  {file:"04-east-wind.svg",name:"東"},
-  {file:"03-red-dragon.svg",name:"中"},
-  {file:"02-green-dragon.svg",name:"發"},
-  {file:"35-spring.svg",name:"春"}
+const MAHJONG_PREVIEW=[
+  {file:'08-characters-1.svg',name:'1萬'},{file:'17-circles-1.svg',name:'1筒'},{file:'26-bamboos-1.svg',name:'1條'},
+  {file:'04-east-wind.svg',name:'東'},{file:'03-red-dragon.svg',name:'中'},{file:'02-green-dragon.svg',name:'發'},{file:'35-spring.svg',name:'春'}
 ];
+el.mahjongPreview.innerHTML=MAHJONG_PREVIEW.map(x=>`<div class="mahjong-preview"><img src="/mahjong/${x.file}" alt="${x.name}"><small>${x.name}</small></div>`).join('');
+
+function lobbyComingSoon(){ alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。'); }
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function formatDate(ms){
+  if(!ms) return '尚未設定';
+  return new Date(ms).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+}
+function boardLabel(size){ return ({25:'5×5',36:'6×6',49:'7×7',64:'8×8'})[Number(size)] || size; }
+function speedLabel(ms){ return (Number(ms)/1000).toString().replace('.0',''); }
+function modeLabel(){ return el.ver.value==='picture' ? '麻將版' : '數字版'; }
+function goalLabel(){ return el.targetLines.value==='99' ? '全盤' : `${el.targetLines.value} 條線`; }
+
 function updateVersionUI(){
- const picture=el.ver.value==="picture";
- el.pictureOptions.classList.toggle("hidden",!picture);
- [...el.size.options].forEach(o=>o.disabled=picture&&!["25","36"].includes(o.value));
- if(picture && !["25","36"].includes(el.size.value)) el.size.value="25";
+  const picture=el.ver.value==='picture';
+  el.pictureOptions.classList.toggle('hidden',!picture);
+  [...el.size.options].forEach(o=>o.disabled=picture&&!['25','36'].includes(o.value));
+  if(picture&&!['25','36'].includes(el.size.value)) el.size.value='25';
 }
-el.mahjongPreview.innerHTML = MAHJONG_PREVIEW.map(x =>
-  `<div class="mahjong-preview"><img src="/mahjong/${x.file}" alt="${x.name}"><small>${x.name}</small></div>`
-).join("");
-el.ver.addEventListener("change", updateVersionUI);
-updateVersionUI();
+el.ver.addEventListener('change',updateVersionUI); updateVersionUI();
 
-
-
-function adminMahjongHTML(item){
-  if(!item) return "-";
-  const label = item.name || item.face || "";
-  return `<img class="admin-current-mahjong" src="/mahjong/${item.file}" alt="${label}" draggable="false">`;
+async function generateRoomId(){
+  if(activeRoom) return alert('房間建立後房號已鎖定。');
+  try{
+    const r=await fetch('/api/admin/new-room-id'); const d=await r.json();
+    if(!d.success) return alert('❌ '+d.message);
+    el.roomId.value=d.roomId;
+  }catch(e){ alert('❌ 無法產生房號，請稍後再試'); }
 }
 
-function esc(x) {
-  return String(x).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
+function parseOptionalSchedule(){
+  const text=el.scheduledAt.value;
+  if(!text) return null;
+  const m=text.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if(!m) throw new Error('開賽日期時間格式錯誤');
+  const [,y,mo,d,h,mi]=m.map(Number);
+  const ms=new Date(y,mo-1,d,h,mi,0,0).getTime();
+  if(!Number.isFinite(ms)||ms<=Date.now()) throw new Error('開賽日期時間必須晚於現在');
+  return ms;
 }
 
-function renderRanking(list) {
-  el.rankBody.innerHTML = list.map(p => `
-    <tr>
-      <td>${p.rank < 4 ? ["🥇","🥈","🥉"][p.rank - 1] : p.rank}</td>
-      <td>${esc(p.name)}</td>
-      <td>${p.hitCount}</td>
-      <td>${p.bingoLines}</td>
-      <td>${p.finishAt ? new Date(p.finishAt).toLocaleTimeString("zh-TW",{hour12:false}) : "—"}</td>
-    </tr>
-  `).join("");
+function buildShareText(room){
+  const prefix=el.ver.value==='picture' ? '叫牌速度' : '叫號速度';
+  const unit=el.ver.value==='picture' ? '張' : '個';
+  return [
+    '🎰 賓果挑戰',
+    '🔗 挑戰連結：'+el.playerUrl.value,
+    '🔢 房間號：'+room.roomId,
+    '🎮 遊戲模式：'+modeLabel(),
+    '📐 盤面大小：'+boardLabel(el.size.value),
+    '🏆 完成條件：'+goalLabel(),
+    '📅 開賽時間：'+formatDate(room.scheduledAt),
+    '⏱️ 遊戲時間：'+el.gameSeconds.value+' 秒',
+    `⚡ ${prefix}：${speedLabel(el.drawIntervalMs.value)} 秒／${unit}`,
+    '📝 備註：'+(el.roomNote.value.trim()||'無')
+  ].join('\n');
 }
 
-function showCountdown(endAt) {
+async function createRoom(){
+  if(!el.roomId.value) await generateRoomId();
+  let scheduledAt=null;
+  try{ scheduledAt=parseOptionalSchedule(); }catch(e){ return alert('❌ '+e.message); }
+  const body={
+    version:el.ver.value, roomId:el.roomId.value, size:Number(el.size.value), scheduledAt,
+    gameSeconds:Number(el.gameSeconds.value), countdownSeconds:Number(el.countdownSeconds.value),
+    drawIntervalMs:Number(el.drawIntervalMs.value), note:el.roomNote.value.trim(), targetLines:Number(el.targetLines.value)
+  };
+  const r=await fetch('/api/admin/create-room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json(); if(!d.success) return alert('❌ '+d.message);
+  activeRoom=d.room.roomId;
+  el.showRoom.textContent=activeRoom;
+  el.playerUrl.value=location.origin+'/?room='+encodeURIComponent(activeRoom);
+  shareText=buildShareText(d.room);
+  el.shareInfo.textContent=shareText;
+  el.control.classList.remove('hidden');
+  el.newRoomBtn.disabled=true; el.createBtn.disabled=true; el.roomId.disabled=true;
+  socket.emit('watchRoom',{roomId:activeRoom});
+  el.status.textContent=d.room.scheduledAt ? '🕐 已建立｜等待預定時間自動開始' : '🟡 已建立｜等待主控按「開始遊戲」';
+  alert('✅ 房間建立成功');
+}
+
+async function copyText(text,ok){
+  try{ await navigator.clipboard.writeText(text); alert('✅ '+ok); }
+  catch(e){ alert('❌ 無法自動複製，請長按文字手動複製'); }
+}
+function copyPlayerUrl(){ copyText(el.playerUrl.value,'已複製玩家連結'); }
+function copyShareText(){ copyText(shareText||el.shareInfo.textContent.trim(),'已複製分享文字'); }
+
+function renderRanking(list){
+  el.rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank<4?['🥇','🥈','🥉'][p.rank-1]:p.rank}</td><td>${esc(p.name)}</td><td>${p.hitCount}</td><td>${p.bingoLines}</td><td>${p.finishAt?new Date(p.finishAt).toLocaleTimeString('zh-TW',{hour12:false}):'—'}</td></tr>`).join('');
+}
+function phaseText(p){return ({waiting:'🟡 等待中',countdown:'🟠 倒數中',playing:'🟢 遊戲中',ended:'🔴 已結束'})[p]||p;}
+function showCountdown(endAt){
   clearInterval(countdownTimer);
-  const update = () => {
-    const sec = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-    el.status.textContent = sec > 0 ? `⏳ 遊戲倒數：${sec} 秒` : "▶ 遊戲開始！";
-    if (sec <= 0) clearInterval(countdownTimer);
-  };
-  update();
-  countdownTimer = setInterval(update, 250);
+  const update=()=>{const sec=Math.max(0,Math.ceil((endAt-Date.now())/1000));el.status.textContent=sec>0?`⏳ 遊戲倒數：${sec} 秒`:'▶ 遊戲開始！';if(sec<=0)clearInterval(countdownTimer)};
+  update(); countdownTimer=setInterval(update,250);
+}
+function adminMahjongHTML(item){return item?`<img class="admin-current-mahjong" src="/mahjong/${item.file}" alt="${item.name||item.face||''}">`:'-';}
+
+async function refreshRoom(){
+  if(!activeRoom)return;
+  const r=await fetch('/api/admin/room/'+encodeURIComponent(activeRoom)); if(!r.ok)return;
+  const d=await r.json(); if(!d.success)return;
+  el.playerCount.textContent=`👥 目前玩家：${d.room.playerCount} 人`;
+  if(d.room.phase==='waiting') el.status.textContent=d.room.scheduledAt?'🟡 等待中｜到預定時間自動開始':'🟡 等待中｜可按「開始遊戲」';
+  if(d.room.phase==='playing') el.status.textContent='🟢 遊戲中';
+  if(d.room.phase==='ended') el.status.textContent='🔴 已結束｜10 分鐘後自動刪除';
+  el.startBtn.disabled=d.room.phase!=='waiting';
+  renderRanking(d.room.ranking||[]);
 }
 
-function toDatetimeLocalValue(date) {
-  const pad = n => String(n).padStart(2,"0");
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+async function startRoom(){
+  if(!activeRoom)return;
+  if(!confirm('確定現在開始倒數嗎？'))return;
+  const r=await fetch('/api/admin/start-room/'+encodeURIComponent(activeRoom),{method:'POST'}); const d=await r.json();
+  if(!d.success)return alert('❌ '+d.message);
+  showCountdown(d.room.countdownEndsAt); el.startBtn.disabled=true;
+}
+async function endRoom(){
+  if(!activeRoom||!confirm('確定要立即結束這場遊戲嗎？'))return;
+  const r=await fetch('/api/admin/end-room/'+encodeURIComponent(activeRoom),{method:'POST'}); const d=await r.json();
+  if(!d.success)return alert('❌ '+d.message); alert('✅ 遊戲已結束，房間將在 10 分鐘後自動刪除'); refreshRoom();
+}
+async function deleteRoom(){
+  if(!activeRoom||!confirm('確定要刪除房間？刪除後玩家會被退出，且無法復原。'))return;
+  const r=await fetch('/api/admin/room/'+encodeURIComponent(activeRoom),{method:'DELETE'}); const d=await r.json();
+  if(!d.success)return alert('❌ '+d.message);
+  alert('✅ 房間已刪除'); activeRoom=''; activeItems=[]; shareText=''; el.control.classList.add('hidden');
+  el.newRoomBtn.disabled=false; el.createBtn.disabled=false; el.roomId.disabled=false; generateRoomId();
 }
 
-function setDefaultStartTime() {
-  // 不再強制預設延後 5 分鐘，也不限制只能從 1 分鐘後開始選。
-  // 管理員可自行選擇任何「晚於目前時間」的開賽日期時間。
-  el.scheduledAt.removeAttribute("min");
+async function copyRank(){
+  const rows=[...el.rankBody.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.innerText.trim()));
+  if(!rows.length)return alert('目前還沒有排行榜資料');
+  const width=1000, margin=40, rowH=58, headH=150, tableH=60;
+  const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=headH+tableH+rows.length*rowH+45;
+  const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff8fb';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#7b294d';ctx.font='bold 38px sans-serif';ctx.textAlign='center';ctx.fillText('🏆 賓果排行榜',width/2,52);
+  ctx.textAlign='left';ctx.font='22px sans-serif';ctx.fillStyle='#333';ctx.fillText('🔢 房間：'+activeRoom,margin,100);
+  const headers=['排名','玩家','點擊格數','賓果線','完成時間'], col=[100,300,170,150,200], startY=headH;
+  let x=margin;ctx.font='bold 20px sans-serif';headers.forEach((h,i)=>{ctx.fillText(h,x+8,startY+38);x+=col[i]});
+  ctx.font='19px sans-serif';rows.forEach((r,ri)=>{let xx=margin,y=startY+tableH+ri*rowH+36;r.forEach((v,i)=>{ctx.fillText(v,xx+8,y);xx+=col[i]});ctx.strokeStyle='#ead5de';ctx.beginPath();ctx.moveTo(margin,y+17);ctx.lineTo(width-margin,y+17);ctx.stroke()});
+  const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
+  try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);alert('✅ 已複製整頁排行榜圖片')}
+  catch(e){const a=document.createElement('a');a.download=`bingo-ranking-${activeRoom}.png`;a.href=canvas.toDataURL('image/png');a.click();alert('✅ 已下載排行榜圖片')}
 }
 
-async function createRoom() {
-  const roomId = el.roomId.value.trim();
-  const playerPassword = el.playerPassword.value.trim();
-  const dateText = el.scheduledAt.value;
+socket.on('roomState',d=>{activeItems=d.items||[];if(d.currentNumber){const item=activeItems.find(x=>x.id===d.currentNumber);el.currentNumber.innerHTML=item?adminMahjongHTML(item):d.currentNumber}renderRanking(d.ranking||[]);refreshRoom()});
+socket.on('rankingUpdate',d=>{renderRanking(d);refreshRoom()});
+socket.on('countdownStarted',d=>{showCountdown(d.countdownEndsAt);el.startBtn.disabled=true});
+socket.on('gameStarted',()=>{el.status.textContent='🟢 遊戲中';el.startBtn.disabled=true});
+socket.on('numberDrawn',d=>{const item=activeItems.find(x=>x.id===d.number);el.currentNumber.innerHTML=item?adminMahjongHTML(item):d.number});
+socket.on('gameEnded',d=>{el.status.textContent='🔴 已結束｜10 分鐘後自動刪除';el.currentNumber.textContent='-';renderRanking(d.ranking||[]);el.startBtn.disabled=true});
 
-  if (!roomId) return alert("❌ 請輸入房間號碼");
-  if (!playerPassword) return alert("❌ 請輸入房間密碼");
-  if (!dateText) return alert("❌ 請先選擇開賽日期時間");
-
-  // datetime-local 格式固定是 YYYY-MM-DDTHH:mm，直接拆開建立本機時間，
-  // 避免不同瀏覽器對 new Date("YYYY-MM-DDTHH:mm") 的解析差異。
-  const match = dateText.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
-  if (!match) return alert("❌ 開賽日期時間格式錯誤，請重新選擇一次");
-
-  const [, y, mo, d, h, mi] = match.map(Number);
-  const startDate = new Date(y, mo - 1, d, h, mi, 0, 0);
-  const scheduledAt = startDate.getTime();
-
-  if (!Number.isFinite(scheduledAt)) {
-    return alert("❌ 無法讀取開賽日期時間，請重新選擇");
-  }
-  if (scheduledAt <= Date.now()) {
-    return alert("❌ 開賽日期時間必須晚於現在");
-  }
-
-  const body = {
-    version: el.ver.value,
-    roomId,
-    playerPassword,
-    size: Number(el.size.value),
-    scheduledAt,
-    gameSeconds: Number(el.gameSeconds.value),
-    countdownSeconds: Number(el.countdownSeconds.value),
-    drawIntervalMs: Number(el.drawIntervalMs.value),
-    note: el.roomNote.value.trim(),
-    targetLines: Number(el.targetLines.value)
-  };
-
-  const response = await fetch("/api/admin/create-room", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(body)
-  });
-
-  const data = await response.json();
-  if (!data.success) return alert("❌ " + data.message);
-
-  activeRoom = data.room.roomId;
-  el.showRoom.textContent = activeRoom;
-  el.playerUrl.value = location.origin + "/?room=" + encodeURIComponent(activeRoom);
-  const startText = new Date(data.room.scheduledAt).toLocaleString("zh-TW", {
-    year:"numeric", month:"2-digit", day:"2-digit",
-    hour:"2-digit", minute:"2-digit", hour12:false
-  });
-  el.shareInfo.textContent =
-    "🔗 玩家網址：" + el.playerUrl.value + "\n" +
-    "🏠 房間號碼：" + activeRoom + "\n" +
-    "🎮 遊戲版本：" + (el.ver.value === "picture" ? "圖案版（麻將）" : "數字版") + "\n" +
-    "🔐 房間密碼：" + el.playerPassword.value + "\n" +
-    "🕐 遊戲開始時間：" + startText + "\n" +
-    "🏆 完成條件：" + (el.targetLines.value === "99" ? "全盤" : el.targetLines.value + " 線") + "\n" +
-    "📝 備註：" + (el.roomNote.value.trim() || "無");
-  el.control.classList.remove("hidden");
-  socket.emit("watchRoom", {roomId: activeRoom});
-
-  const t = new Date(data.room.scheduledAt);
-  el.status.textContent =
-    "🕐 預定開賽：" +
-    t.toLocaleString("zh-TW",{hour12:false}) +
-    "｜時間到自動開始倒數";
-
-  alert("✅ 房間建立成功");
-}
-
-function copyUrl() {
-  const text = el.shareInfo && el.shareInfo.textContent.trim()
-    ? el.shareInfo.textContent.trim()
-    : el.playerUrl.value;
-  navigator.clipboard.writeText(text)
-    .then(() => alert("✅ 已複製玩家資訊"));
-}
-
-async function copyRank() {
-  const rows = [...el.rankBody.querySelectorAll("tr")].map(tr =>
-    [...tr.children].map(td => td.innerText.trim())
-  );
-  if (!rows.length) return alert("目前還沒有排行榜資料");
-
-  const width = 1100;
-  const margin = 46;
-  const headerH = 190;
-  const rowH = 58;
-  const tableHeadH = 64;
-  const height = headerH + tableHeadH + rows.length * rowH + 55;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = "#fff8fb";
-  ctx.fillRect(0, 0, width, height);
-  ctx.fillStyle = "#7b294d";
-  ctx.font = "bold 40px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("🏆 賓果排行榜", width / 2, 58);
-
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#333";
-  ctx.font = "24px sans-serif";
-  ctx.fillText("🏠 房間：" + (activeRoom || "—"), margin, 105);
-  const shareLines = (el.shareInfo?.textContent || "").split("\n");
-  const startLine = shareLines.find(x => x.includes("遊戲開始時間")) || "🕐 遊戲開始時間：—";
-  const targetLine = shareLines.find(x => x.includes("完成條件")) || "🏆 完成條件：—";
-  ctx.fillText(startLine, margin, 140);
-  ctx.fillText(targetLine, margin, 175);
-
-  const cols = [margin, 155, 520, 710, 875];
-  const labels = ["排名", "玩家", "點擊格數", "賓果線", "完成時間"];
-  const tableTop = headerH;
-  ctx.fillStyle = "#f3dce6";
-  ctx.fillRect(margin, tableTop, width - margin * 2, tableHeadH);
-  ctx.fillStyle = "#5b2440";
-  ctx.font = "bold 23px sans-serif";
-  labels.forEach((x,i) => ctx.fillText(x, cols[i], tableTop + 41));
-
-  ctx.font = "22px sans-serif";
-  rows.forEach((row, r) => {
-    const y = tableTop + tableHeadH + r * rowH;
-    ctx.fillStyle = r % 2 ? "#fff" : "#fffafb";
-    ctx.fillRect(margin, y, width - margin * 2, rowH);
-    ctx.fillStyle = "#222";
-    row.forEach((x,i) => ctx.fillText(x, cols[i], y + 37));
-    ctx.strokeStyle = "#ead5df";
-    ctx.beginPath(); ctx.moveTo(margin, y + rowH); ctx.lineTo(width - margin, y + rowH); ctx.stroke();
-  });
-
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-  if (!blob) return alert("❌ 無法產生排行榜圖片");
-
-  try {
-    if (navigator.clipboard && window.ClipboardItem) {
-      await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]);
-      alert("✅ 已複製完整排行榜圖片，可以直接貼到 LINE");
-      return;
-    }
-  } catch (e) {}
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `賓果排行榜-${activeRoom || "room"}.png`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  alert("此瀏覽器不支援直接複製圖片，已改為下載完整排行榜圖片");
-}
-
-function phaseText(phase) {
-  return ({waiting:"🟡 等待開始", countdown:"🟠 倒數中", playing:"🟢 遊戲中", ended:"🔴 已結束"})[phase] || phase;
-}
-
-async function refreshRoom() {
-  if (!activeRoom) return;
-  const r = await fetch("/api/admin/room/" + encodeURIComponent(activeRoom));
-  if (!r.ok) return;
-  const d = await r.json();
-  if (!d.success) return;
-  el.playerCount.textContent = `👥 目前玩家：${d.room.playerCount} 人`;
-  if (d.room.phase === "waiting") el.status.textContent = phaseText(d.room.phase) + "｜等待預定時間";
-  if (d.room.phase === "playing") el.status.textContent = phaseText(d.room.phase);
-  if (d.room.phase === "ended") el.status.textContent = phaseText(d.room.phase) + "｜10 分鐘後自動刪除";
-}
-
-async function endRoom() {
-  if (!activeRoom) return;
-  if (!confirm("確定要立即結束這場遊戲嗎？")) return;
-  const r = await fetch("/api/admin/end-room/" + encodeURIComponent(activeRoom), {method:"POST"});
-  const d = await r.json();
-  if (!d.success) return alert("❌ " + d.message);
-  alert("✅ 遊戲已結束，房間將在 10 分鐘後自動刪除");
-  refreshRoom();
-}
-
-async function deleteRoom() {
-  if (!activeRoom) return;
-  if (!confirm("確定要刪除房間？刪除後玩家會被退出，且無法復原。")) return;
-  const r = await fetch("/api/admin/room/" + encodeURIComponent(activeRoom), {method:"DELETE"});
-  const d = await r.json();
-  if (!d.success) return alert("❌ " + d.message);
-  alert("✅ 房間已刪除，這個房間號碼現在可以重新使用");
-  activeRoom = "";
-  el.control.classList.add("hidden");
-}
-
-
-socket.on("roomState", d => {
-  activeItems = d.items || [];
-  if (d.currentNumber) {
-    const item = activeItems.find(x => x.id === d.currentNumber);
-    el.currentNumber.innerHTML = item ? adminMahjongHTML(item) : d.currentNumber;
-  }
-});
-
-socket.on("rankingUpdate", d => { renderRanking(d); refreshRoom(); });
-socket.on("countdownStarted", d => { showCountdown(d.countdownEndsAt); refreshRoom(); });
-socket.on("gameStarted", () => { el.status.textContent = "🟢 遊戲中"; refreshRoom(); });
-socket.on("numberDrawn", d => {
-  const item = activeItems.find(x => x.id === d.number);
-  el.currentNumber.innerHTML = item ? adminMahjongHTML(item) : d.number;
-});
-socket.on("gameEnded", d => {
-  el.status.textContent = "🏁 遊戲結束";
-  el.currentNumber.textContent = "-";
-  renderRanking(d.ranking || []);
-  el.status.textContent = "🔴 已結束｜10 分鐘後自動刪除";
-  refreshRoom();
-});
-
-setDefaultStartTime();
-</script></body></html>
+generateRoomId();
+</script>
+</body>
+</html>

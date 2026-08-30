@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=21">
   <title>賓果遊戲室</title>
 </head>
-<body>
-<div class="top"><h1>🎰 賓果遊戲</h1></div>
+<body class="cute-theme player-page">
+<div class="top"><h1>🎰 賓果遊戲</h1><button class="lobby-btn" onclick="lobbyComingSoon()">🏠 返回遊戲大廳</button></div>
 
 <div class="wrap">
   <div class="card">
@@ -51,6 +51,7 @@ if (!saved) {
 }
 
 const socket = io();
+function lobbyComingSoon(){ alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。'); }
 
 const who = document.getElementById("who");
 const roomText = document.getElementById("roomText");
@@ -360,14 +361,14 @@ socket.on("joinSuccess", data => {
       hour:"2-digit", minute:"2-digit", hour12:false
     });
   } else {
-    startTimeText.textContent = "🕐 開賽時間：—";
+    startTimeText.textContent = "🕐 開賽時間：尚未設定";
   }
   goalText.textContent = "🏆 完成條件：" + (data.targetLines === 99 ? "全盤" : data.targetLines + " 線");
   sessionStorage.setItem("bingoPlayer", JSON.stringify(saved));
   renderBoard(data.size);
 
   if (data.phase === "waiting") {
-    gameStatus.textContent = "等待開賽時間";
+    gameStatus.textContent = data.scheduledAt ? "等待開賽時間" : "等待主控開始遊戲";
   } else if (data.phase === "countdown" && data.countdownEndsAt) {
     showCountdown(data.countdownEndsAt);
   } else if (data.phase === "playing") {
@@ -419,7 +420,6 @@ socket.on("connect", () => {
   socket.emit("joinRoom", {
     roomId: saved.roomId,
     name: saved.name,
-    password: saved.password,
     clientId: saved.clientId
   });
 });

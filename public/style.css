@@ -94,3 +94,39 @@
     font-size:17px;
   }
 }
+
+/* V21 固定可愛動物背景＋新版主控 */
+html{min-height:100%}
+body.cute-theme{
+  min-height:100vh;
+  background:#fff7f0 url('/cute-animal-bg.svg') center/cover fixed no-repeat;
+}
+body.cute-theme .top{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(90deg,rgba(255,79,154,.94),rgba(255,140,176,.92));
+  box-shadow:0 5px 18px rgba(170,70,110,.16)
+}
+body.cute-theme .top .lobby-btn{width:auto;max-width:220px;padding:10px 14px;background:rgba(255,255,255,.92);color:#a23866;border:1px solid rgba(255,255,255,.7)}
+body.cute-theme .card{background:rgba(255,255,255,.91);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);border-color:rgba(255,187,209,.8);box-shadow:0 10px 28px rgba(145,83,105,.16)}
+textarea{width:100%;padding:13px;border:1px solid #efbfd0;border-radius:12px;font-size:16px;background:#fff;font-family:inherit;resize:vertical}
+.soft-panel,.share-info{padding:16px;border:1px solid #efd4df;border-radius:16px;background:rgba(255,248,251,.9)}
+.mahjong-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+.inline-actions,.share-buttons,.control-buttons{display:flex;gap:10px;align-items:center}
+.inline-actions input{flex:1;font-weight:900;font-size:20px;text-align:center;letter-spacing:3px}
+.inline-actions button{width:auto;min-width:170px}
+.share-buttons{margin:10px 0 14px}.share-buttons button{flex:1}
+.share-info{white-space:pre-line;line-height:1.8;margin-top:8px}
+.control-head{display:flex;justify-content:space-between;align-items:flex-end;gap:15px;margin-bottom:16px}
+.control-head>div:first-child{min-width:150px}.control-buttons{justify-content:flex-end}.control-buttons button{width:auto;min-width:145px}
+.big-room{display:block;font-size:30px;color:#ff3f8f;letter-spacing:3px}
+.room-meta{align-items:center;margin:12px 0}
+.welcome-animal{text-align:center;font-size:48px;letter-spacing:8px;margin:2px 0 8px}
+.room-hint{padding:10px 12px;border-radius:12px;background:#fff5f8;color:#a23866;font-weight:800;text-align:center}
+button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:700px){
+  body.cute-theme{background-attachment:scroll;background-position:center top}
+  body.cute-theme .top{padding:14px 12px}.top h1{flex:1}.top .lobby-btn{font-size:12px;padding:9px 10px;max-width:150px}
+  .inline-actions,.share-buttons,.control-head,.control-buttons{flex-direction:column;align-items:stretch}
+  .inline-actions button,.control-buttons button{width:100%;min-width:0}.control-head>div:first-child{min-width:0}
+  .share-buttons button{width:100%}.welcome-animal{font-size:38px}
+}
