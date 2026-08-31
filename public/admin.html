@@ -357,7 +357,7 @@ const MAHJONG_PREVIEW=[
 ];
 el.mahjongPreview.innerHTML=MAHJONG_PREVIEW.map(x=>`<div class="mahjong-preview"><img src="/mahjong/${x.file}" alt="${x.name}"><small>${x.name}</small></div>`).join('');
 
-function lobbyComingSoon(){ alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。'); }
+function lobbyComingSoon(){ window.location.href='https://game-lobby-eo8o.onrender.com/'; }
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function formatDate(ms){
   if(!ms) return '尚未設定';
