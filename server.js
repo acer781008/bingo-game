@@ -134,7 +134,7 @@ function drawNext(room) {
   const pool = room.version === "picture"
     ? MAHJONG_ITEMS.map(item => item.id)
     : room.version === "farm"
-      ? FARM_ITEMS.map(item => item.id)
+      ? (room.items || FARM_ITEMS).map(item => item.id)
       : Array.from({length: numberPoolMax}, (_, i) => i + 1);
   const remaining = pool.filter(value => !room.drawn.includes(value));
   if (!remaining.length) return finishGame(room);
@@ -308,7 +308,16 @@ app.post("/api/admin/create-room", (req, res) => {
     id: roomId,
     version,
     theme,
-    items: version === "picture" ? MAHJONG_ITEMS.slice() : version === "farm" ? FARM_ITEMS.slice() : null,
+    items: version === "picture" ? MAHJONG_ITEMS.slice() : version === "farm" ? (() => {
+      // V21.11: 144 張只當總素材庫；每局依盤面抽出較小素材池，避免叫號過散。
+      const poolSize = ({25:45, 36:60, 49:75, 64:90})[size] || 45;
+      const shuffled = FARM_ITEMS.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled.slice(0, poolSize);
+    })() : null,
     size,
     scheduledAt,
     countdownSeconds,
