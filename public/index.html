@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="/style.css?v=21.2">
-  <title>賓果遊戲</title>
+  <title>種菜賓果</title>
 </head>
 <body class="cute-theme player-page">
 <div class="top">
-  <h1>🎰 賓果遊戲</h1>
+  <h1>🌱 種菜賓果</h1>
   <button class="lobby-btn" onclick="lobbyComingSoon()">🏠 返回遊戲大廳</button>
 </div>
 
@@ -36,10 +36,11 @@ const roomHint=document.getElementById('roomHint');
 const params=new URLSearchParams(location.search);
 const roomId=(params.get('room')||'').trim();
 
-function lobbyComingSoon(){alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。');}
+function lobbyComingSoon(){location.href='https://game-lobby-eo8o.onrender.com/';}
 function getClientId(){
-  let id=sessionStorage.getItem('bingoClientId');
-  if(!id){id=crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random();sessionStorage.setItem('bingoClientId',id)}
+  let id=localStorage.getItem('bingoClientId')||sessionStorage.getItem('bingoClientId');
+  if(!id){id=crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random();}
+  localStorage.setItem('bingoClientId',id); sessionStorage.setItem('bingoClientId',id);
   return id;
 }
 
@@ -68,7 +69,8 @@ playerName.addEventListener('keydown',e=>{if(e.key==='Enter')join()});
 
 socket.on('joinError',message=>{joinBtn.disabled=false;joinStatus.textContent='❌ '+message;alert('❌ '+message)});
 socket.on('joinSuccess',data=>{
-  sessionStorage.setItem('bingoPlayer',JSON.stringify({clientId:getClientId(),name:playerName.value.trim(),roomId:data.roomId,size:data.size}));
+  const player={clientId:getClientId(),name:playerName.value.trim(),roomId:data.roomId,size:data.size};
+  sessionStorage.setItem('bingoPlayer',JSON.stringify(player)); localStorage.setItem('bingoPlayer',JSON.stringify(player));
   location.href='/game.html';
 });
 </script>

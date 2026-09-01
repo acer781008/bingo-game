@@ -3,444 +3,61 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.8">
-  <title>賓果遊戲室</title>
+  <link rel="stylesheet" href="/style.css?v=21.10-farm">
+  <title>種菜賓果</title>
+  <style>
+    .player-head-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.player-head-row button{width:auto;min-width:150px}.meta-line{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:7px}.meta-chip{font-size:13px;font-weight:800;color:#775c68;background:#fff8fb;border:1px solid #f0d9e2;border-radius:999px;padding:5px 9px}.number img{width:min(215px,54vw);height:min(215px,54vw);object-fit:contain;display:block;margin:0 auto}.farm-tile-image{display:block;width:100%;height:100%;object-fit:contain;user-select:none}.picture-cell.hit .farm-tile-image{opacity:.5;transform:scale(.96)}.copy-row{display:flex;justify-content:center;margin-top:10px}.copy-row button{width:min(360px,100%)}
+    .result-modal{position:fixed;inset:0;background:rgba(73,50,61,.48);display:flex;align-items:center;justify-content:center;padding:18px;z-index:1000}.result-modal.hidden{display:none}.result-box{width:min(420px,100%);background:#fff;border:2px solid #ffd0df;border-radius:22px;padding:22px;text-align:center;box-shadow:0 18px 60px rgba(0,0,0,.2)}.result-box h2{margin:0 0 12px;color:#a23866}.result-big{font-size:24px;font-weight:900;line-height:1.7;color:#49323d}.result-box button{margin-top:14px}.game-status-live{font-size:20px!important}.current-caption{text-align:center;color:#88737d;font-size:12px;margin-top:-4px;min-height:18px}.rank-card{margin-top:0}
+    @media(max-width:700px){.player-head-row{align-items:stretch}.player-head-row button{width:100%}.meta-line{gap:5px}.meta-chip{font-size:12px;padding:4px 7px}.number img{width:min(180px,48vw);height:min(180px,48vw)}}
+  </style>
 </head>
 <body class="cute-theme player-page">
-<div class="top"><h1>🎰 賓果遊戲</h1><button class="lobby-btn" onclick="lobbyComingSoon()">🏠 返回遊戲大廳</button></div>
-
+<div class="top"><h1>🌱 種菜賓果</h1><button class="lobby-btn" onclick="goLobby()">🏠 返回遊戲大廳</button></div>
 <div class="wrap">
   <div class="card">
-    <div class="row">
-      <b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b>
-      <button id="voiceBtn">🔊 點我開啟語音</button><div class="muted" style="font-size:13px;margin-top:6px">手機瀏覽器需先點一次才能允許語音播報；LINE 等內建瀏覽器若不支援，請改用 Chrome / Safari 開啟。</div>
-    </div>
-    <div id="startTimeText" class="muted" style="margin-top:8px;font-weight:700">🕐 開賽時間：讀取中…</div>
-    <div id="goalText" class="muted" style="margin-top:4px;font-weight:700">🏆 完成條件：讀取中…</div>
-    <div id="gameStatus" class="status">重新連線中…</div>
-    <div id="currentNumber" class="number">-</div>
+    <div class="player-head-row"><b>👤 <span id="who"></span>　🏠 房間 <span id="roomText"></span></b><button id="voiceBtn" type="button">🔊 聲音</button></div>
+    <div class="meta-line"><span id="startTimeText" class="meta-chip">🕐 開賽時間：讀取中…</span><span id="goalText" class="meta-chip">🏆 完成條件：讀取中…</span></div>
+    <div id="gameStatus" class="status game-status-live">重新連線中…</div>
+    <div id="currentNumber" class="number">-</div><div id="currentCaption" class="current-caption"></div>
   </div>
-
-  <div class="card">
-    <div id="board" class="board"></div>
-    <br>
-    <button class="purple" id="copyBtn">📋 複製整張賓果盤</button>
-    <p id="copyHint" class="muted"></p>
-  </div>
-
-  <div class="card">
-    <h2>🏆 即時排行榜</h2>
-    <table class="leader">
-      <thead>
-        <tr>
-          <th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th>
-        </tr>
-      </thead>
-      <tbody id="rankBody"></tbody>
-    </table>
-  </div>
+  <div class="card"><div id="board" class="board"></div><div class="copy-row"><button class="purple" id="copyBtn" type="button">📋 複製賓果盤（整盤）</button></div><p id="copyHint" class="muted" style="text-align:center"></p></div>
+  <div class="card rank-card"><h2>🏆 即時排行榜</h2><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rankBody"></tbody></table></div>
 </div>
-
+<div id="resultModal" class="result-modal hidden" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-box"><h2 id="resultTitle">🏁 本局結束</h2><div id="resultSummary" class="result-big"></div><button id="closeResultBtn" type="button">知道了</button></div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const saved = JSON.parse(sessionStorage.getItem("bingoPlayer") || "null");
-if (!saved) {
-  alert("請先從玩家加入頁進入房間");
-  location.href = "/";
-  throw new Error("No player session");
-}
-
-const socket = io();
-function lobbyComingSoon(){ alert('🏠 遊戲大廳之後完成後，這顆按鈕會直接連回大廳。'); }
-
-const who = document.getElementById("who");
-const roomText = document.getElementById("roomText");
-const voiceBtn = document.getElementById("voiceBtn");
-const startTimeText = document.getElementById("startTimeText");
-const goalText = document.getElementById("goalText");
-const gameStatus = document.getElementById("gameStatus");
-const currentNumber = document.getElementById("currentNumber");
-const board = document.getElementById("board");
-const copyBtn = document.getElementById("copyBtn");
-const copyHint = document.getElementById("copyHint");
-const rankBody = document.getElementById("rankBody");
-
-who.textContent = saved.name;
-roomText.textContent = saved.roomId;
-
-let voiceOn = false;
-let voiceUnlocked = false;
-let current = null;
-let currentToken = 0;
-let countdownTimer = null;
-let boardNumbers = [];
-let hitNumbers = new Set();
-let gameVersion = "number";
-let gameItems = [];
-
-function boardStorageKey() {
-  return `bingoBoard:${saved.roomId}:${saved.clientId}:${gameVersion}`;
-}
-
-function loadBoardState(size) {
-  const raw = sessionStorage.getItem(boardStorageKey());
-  if (raw) {
-    try {
-      const data = JSON.parse(raw);
-      if (data.size === size && Array.isArray(data.numbers)) {
-        boardNumbers = data.numbers;
-        hitNumbers = new Set(data.hits || []);
-        return;
-      }
-    } catch(e) {}
-  }
-
-  const numberPoolMax = ({25:50, 36:60, 49:75, 64:90})[size] || size;
-  boardNumbers = gameVersion === "picture"
-    ? gameItems.map(x => x.id)
-    : Array.from({length:numberPoolMax}, (_,i)=>i+1);
-  for (let i = boardNumbers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [boardNumbers[i], boardNumbers[j]] = [boardNumbers[j], boardNumbers[i]];
-  }
-  boardNumbers = boardNumbers.slice(0, size);
-  hitNumbers = new Set();
-  saveBoardState(size);
-}
-
-function saveBoardState(size) {
-  sessionStorage.setItem(boardStorageKey(), JSON.stringify({
-    size,
-    numbers: boardNumbers,
-    hits: [...hitNumbers]
-  }));
-}
-
-
-function mahjongHTML(item,current=false){
-  if(!item) return "";
-  const cls = current ? " current-mahjong-image" : "";
-  const label = item.name || item.face || "";
-  return `<img class="mahjong-tile-image${cls}" src="/mahjong/${item.file}" alt="${label}" draggable="false">`;
-}
-
-function renderBoard(size) {
-  loadBoardState(size);
-  const side = Math.sqrt(size);
-  board.style.gridTemplateColumns = `repeat(${side}, minmax(0, 1fr))`;
-  board.dataset.side = String(side);
-  board.dataset.version = gameVersion;
-  board.innerHTML = "";
-
-  boardNumbers.forEach(n => {
-    const cell = document.createElement("div");
-    cell.className = "cell" + (hitNumbers.has(n) ? " hit" : "") + (gameVersion === "picture" ? " picture-cell" : "");
-    if (gameVersion === "picture") {
-      const item = gameItems.find(x => x.id === n);
-      cell.innerHTML = item ? mahjongHTML(item) : n;
-    } else {
-      cell.textContent = n;
-    }
-    cell.dataset.number = n;
-    cell.addEventListener("click", () => clickCell(cell, n));
-    board.appendChild(cell);
-  });
-}
-
-function stats() {
-  const cells = [...board.children];
-  const side = Math.sqrt(saved.size);
-  const marked = cells.map(c => c.classList.contains("hit"));
-  let lines = 0;
-
-  for (let r=0; r<side; r++) {
-    if (Array.from({length:side}, (_,c)=>marked[r*side+c]).every(Boolean)) lines++;
-  }
-  for (let c=0; c<side; c++) {
-    if (Array.from({length:side}, (_,r)=>marked[r*side+c]).every(Boolean)) lines++;
-  }
-  if (Array.from({length:side}, (_,i)=>marked[i*side+i]).every(Boolean)) lines++;
-  if (Array.from({length:side}, (_,i)=>marked[i*side+(side-1-i)]).every(Boolean)) lines++;
-
-  return {
-    hitCount: marked.filter(Boolean).length,
-    bingoLines: lines
-  };
-}
-
-function clickCell(cell, number) {
-  if (String(number) !== String(current)) return;
-  if (cell.dataset.current !== "1") return;
-  if (cell.classList.contains("hit")) return;
-
-  cell.dataset.current = "0";
-  cell.classList.add("hit");
-  hitNumbers.add(number);
-  saveBoardState(saved.size);
-
-  socket.emit("addScore", {
-    ...stats(),
-    token: currentToken
-  });
-}
-
-function allowCurrent(number) {
-  [...board.children].forEach(c => c.dataset.current = "0");
-  const target = [...board.children].find(c =>
-    String(c.dataset.number) === String(number) && !c.classList.contains("hit")
-  );
-  if (target) target.dataset.current = "1";
-}
-
-function showCountdown(endAt) {
-  clearInterval(countdownTimer);
-
-  const update = () => {
-    const sec = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-    gameStatus.textContent = sec > 0
-      ? `⏳ 遊戲倒數：${sec} 秒`
-      : "▶ 遊戲開始！";
-    if (sec <= 0) clearInterval(countdownTimer);
-  };
-
-  update();
-  countdownTimer = setInterval(update, 250);
-}
-
-function speechText(value) {
-  if (gameVersion !== "picture") return String(value);
-  const item = gameItems.find(x => x.id === value);
-  if (!item) return String(value);
-  const digit = {"1":"一","2":"二","3":"三","4":"四","5":"五","6":"六","7":"七","8":"八","9":"九"};
-  const name = item.name || item.face || value;
-  if (/^[1-9]萬$/.test(name)) return digit[name[0]] + "萬";
-  if (/^[1-9]筒$/.test(name)) return digit[name[0]] + "筒";
-  if (/^[1-9](條|索)$/.test(name)) return digit[name[0]] + "條";
-  const fullNames = {
-    "東":"東風","南":"南風","西":"西風","北":"北風",
-    "中":"紅中","發":"發財","白":"白板",
-    "春":"春花","夏":"夏花","秋":"秋花","冬":"冬花",
-    "梅":"梅花","蘭":"蘭花","菊":"菊花","竹":"竹花"
-  };
-  return fullNames[name] || name;
-}
-function speak(number) {
-  if (!voiceOn || !("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(speechText(number));
-  utterance.lang = "zh-TW";
-  utterance.rate = gameVersion === "picture" ? 0.78 : 0.9;
-  speechSynthesis.speak(utterance);
-}
-
-function renderRanking(list) {
-  rankBody.innerHTML = list.map(p => `
-    <tr>
-      <td>${p.rank < 4 ? ["🥇","🥈","🥉"][p.rank-1] : p.rank}</td>
-      <td>${String(p.name).replace(/[&<>"']/g, c => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]))}</td>
-      <td>${p.hitCount}</td>
-      <td>${p.bingoLines}</td>
-      <td>${p.finishSeconds != null ? String(Math.floor(p.finishSeconds/60)).padStart(2,"0")+":"+String(p.finishSeconds%60).padStart(2,"0") : "—"}</td>
-    </tr>
-  `).join("");
-}
-
-voiceBtn.addEventListener("click", () => {
-  if (!("speechSynthesis" in window)) {
-    alert("目前這個內建瀏覽器不支援語音播報。請點右上角選單，改用 Chrome 或 Safari 開啟遊戲網址後，再按一次『點我開啟語音』。");
-    return;
-  }
-
-  if (!voiceUnlocked) {
-    voiceUnlocked = true;
-    voiceOn = true;
-    speechSynthesis.cancel();
-    const test = new SpeechSynthesisUtterance("語音已開啟");
-    test.lang = "zh-TW";
-    test.rate = 0.9;
-    speechSynthesis.speak(test);
-    voiceBtn.textContent = "🔊 語音：開";
-    return;
-  }
-
-  voiceOn = !voiceOn;
-  voiceBtn.textContent = voiceOn ? "🔊 語音：開" : "🔇 語音：關";
-  if (!voiceOn) speechSynthesis.cancel();
-});
-
-copyBtn.addEventListener("click", async () => {
-  const side = Math.sqrt(saved.size);
-  const cell = side === 6 ? 64 : 72;
-  const pad = 20;
-  const headerH = 55;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = side * cell + pad * 2;
-  canvas.height = side * cell + pad * 2 + headerH;
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = "#fff5f8";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = "#a23866";
-  ctx.font = "bold 22px sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("我的賓果盤｜房間 " + saved.roomId, pad, 32);
-
-  async function loadCanvasImage(src) {
-    return await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  const cells = [...board.children];
-
-  for (let i = 0; i < cells.length; i++) {
-    const c = cells[i];
-    const col = i % side;
-    const row = Math.floor(i / side);
-    const x = pad + col * cell;
-    const y = headerH + pad + row * cell;
-    const inner = cell - 8;
-
-    ctx.fillStyle = c.classList.contains("hit") ? "#ff5d9e" : "#fff";
-    ctx.fillRect(x+4,y+4,inner,inner);
-    ctx.strokeStyle = "#efbfd0";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x+4,y+4,inner,inner);
-
-    if (gameVersion === "picture") {
-      const tileImg = c.querySelector("img");
-      if (tileImg && tileImg.src) {
-        try {
-          const img = await loadCanvasImage(tileImg.src);
-          const maxW = inner - 10;
-          const maxH = inner - 10;
-          const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
-          const w = img.naturalWidth * scale;
-          const h = img.naturalHeight * scale;
-          ctx.drawImage(img, x + cell/2 - w/2, y + cell/2 - h/2, w, h);
-        } catch(e) {
-          const item = gameItems.find(x => String(x.id) === String(c.dataset.number));
-          ctx.fillStyle = "#49323d";
-          ctx.font = "bold 16px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(item?.name || "", x+cell/2, y+cell/2);
-        }
-      }
-    } else {
-      ctx.fillStyle = c.classList.contains("hit") ? "#fff" : "#49323d";
-      ctx.font = "bold 21px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(c.textContent, x+cell/2, y+cell/2);
-    }
-
-    if (c.classList.contains("hit")) {
-      ctx.strokeStyle = "#ff2f83";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(x+6,y+6,inner-4,inner-4);
-    }
-  }
-
-  try {
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
-    copyHint.textContent = "✅ 已複製整張賓果盤圖片";
-  } catch(e) {
-    const link = document.createElement("a");
-    link.download = `bingo-${saved.roomId}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-    copyHint.textContent = "✅ 已下載整張賓果盤圖片";
-  }
-});
-
-socket.on("joinError", message => {
-  alert("❌ " + message);
-  location.href = "/";
-});
-
-socket.on("joinSuccess", data => {
-  saved.size = data.size;
-  gameVersion = data.version || "number";
-  gameItems = data.items || [];
-  voiceBtn.style.display = "";
-  if (data.scheduledAt) {
-    const start = new Date(data.scheduledAt);
-    startTimeText.textContent = "🕐 開賽時間：" + start.toLocaleString("zh-TW", {
-      year:"numeric", month:"2-digit", day:"2-digit",
-      hour:"2-digit", minute:"2-digit", hour12:false
-    });
-  } else {
-    startTimeText.textContent = "🕐 開賽時間：尚未設定";
-  }
-  goalText.textContent = "🏆 完成條件：" + (data.targetLines === 99 ? "全盤" : data.targetLines + " 線");
-  sessionStorage.setItem("bingoPlayer", JSON.stringify(saved));
-  renderBoard(data.size);
-
-  if (data.phase === "waiting") {
-    gameStatus.textContent = data.scheduledAt ? "等待開賽時間" : "等待主控開始遊戲";
-  } else if (data.phase === "countdown" && data.countdownEndsAt) {
-    showCountdown(data.countdownEndsAt);
-  } else if (data.phase === "playing") {
-    gameStatus.textContent = "▶ 遊戲進行中";
-    if (data.currentNumber) {
-      current = data.currentNumber;
-      currentToken = data.drawToken || 0;
-      const item = gameItems.find(x => x.id === data.currentNumber);
-      currentNumber.innerHTML = item ? mahjongHTML(item,true) : data.currentNumber;
-      allowCurrent(data.currentNumber);
-    }
-  }
-});
-
-socket.on("countdownStarted", data => {
-  showCountdown(data.countdownEndsAt);
-});
-
-socket.on("gameStarted", () => {
-  gameStatus.textContent = "▶ 遊戲進行中";
-});
-
-socket.on("numberDrawn", data => {
-  current = data.number;
-  currentToken = data.token;
-  const item = gameItems.find(x => x.id === data.number);
-  currentNumber.innerHTML = item ? mahjongHTML(item,true) : data.number;
-  allowCurrent(data.number);
-  speak(data.number);
-});
-
-socket.on("rankingUpdate", renderRanking);
-
-socket.on("roomDeleted", () => {
-  alert("此房間已由管理員刪除");
-  sessionStorage.removeItem("bingoPlayer");
-  location.href = "/";
-});
-
-socket.on("gameEnded", data => {
-  current = null;
-  [...board.children].forEach(c => c.dataset.current = "0");
-  currentNumber.textContent = "-";
-  gameStatus.textContent = "🏁 遊戲結束";
-  if (data.ranking) renderRanking(data.ranking);
-});
-
-socket.on("connect", () => {
-  socket.emit("joinRoom", {
-    roomId: saved.roomId,
-    name: saved.name,
-    clientId: saved.clientId
-  });
-});
+const saved=JSON.parse(sessionStorage.getItem('bingoPlayer')||localStorage.getItem('bingoPlayer')||'null');
+if(!saved){alert('請先從玩家加入頁進入房間');location.href='/';throw new Error('No player session')}
+const socket=io(); const $=id=>document.getElementById(id); const who=$('who'),roomText=$('roomText'),voiceBtn=$('voiceBtn'),startTimeText=$('startTimeText'),goalText=$('goalText'),gameStatus=$('gameStatus'),currentNumber=$('currentNumber'),currentCaption=$('currentCaption'),board=$('board'),copyBtn=$('copyBtn'),copyHint=$('copyHint'),rankBody=$('rankBody'),resultModal=$('resultModal'),resultSummary=$('resultSummary');
+who.textContent=saved.name;roomText.textContent=saved.roomId;
+let voiceOn=false,voiceUnlocked=false,current=null,currentToken=0,countdownTimer=null,gameTimer=null,boardNumbers=[],hitNumbers=new Set(),gameVersion='number',gameItems=[],roomState={};
+function goLobby(){location.href='https://game-lobby-eo8o.onrender.com/'}
+function imageVersion(v=gameVersion){return v==='farm'||v==='picture'}
+function itemSrc(item){return gameVersion==='farm'?`/farm/${item.file}`:`/mahjong/${item.file}`}
+function boardStorageKey(){return `bingoBoard:${saved.roomId}:${saved.clientId}:${gameVersion}`}
+function saveBoardState(size){localStorage.setItem(boardStorageKey(),JSON.stringify({size,numbers:boardNumbers,hits:[...hitNumbers]}))}
+function loadBoardState(size){const raw=localStorage.getItem(boardStorageKey())||sessionStorage.getItem(boardStorageKey());if(raw){try{const d=JSON.parse(raw);if(d.size===size&&Array.isArray(d.numbers)){boardNumbers=d.numbers;hitNumbers=new Set(d.hits||[]);return}}catch(e){}}const max=({25:50,36:60,49:75,64:90})[size]||size;boardNumbers=imageVersion()?gameItems.map(x=>x.id):Array.from({length:max},(_,i)=>i+1);for(let i=boardNumbers.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[boardNumbers[i],boardNumbers[j]]=[boardNumbers[j],boardNumbers[i]]}boardNumbers=boardNumbers.slice(0,size);hitNumbers=new Set();saveBoardState(size)}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function itemHTML(item,currentItem=false){if(!item)return '';const cls=gameVersion==='farm'?'farm-tile-image':'mahjong-tile-image';const extra=currentItem?' current-mahjong-image':'';return `<img class="${cls}${extra}" src="${itemSrc(item)}" alt="${esc(item.name||item.face||'')}" draggable="false">`}
+function renderBoard(size){loadBoardState(size);const side=Math.sqrt(size);board.style.gridTemplateColumns=`repeat(${side},minmax(0,1fr))`;board.dataset.side=String(side);board.dataset.version=gameVersion;board.innerHTML='';for(const n of boardNumbers){const cell=document.createElement('div');cell.className='cell'+(hitNumbers.has(n)?' hit':'')+(imageVersion()?' picture-cell':'');cell.dataset.number=n;if(imageVersion()){const item=gameItems.find(x=>String(x.id)===String(n));cell.innerHTML=item?itemHTML(item):n}else cell.textContent=n;cell.addEventListener('click',()=>clickCell(cell,n));board.appendChild(cell)}allowCurrent(current)}
+function stats(){const cells=[...board.children],side=Math.sqrt(saved.size),marked=cells.map(c=>c.classList.contains('hit'));let lines=0;for(let r=0;r<side;r++)if(Array.from({length:side},(_,c)=>marked[r*side+c]).every(Boolean))lines++;for(let c=0;c<side;c++)if(Array.from({length:side},(_,r)=>marked[r*side+c]).every(Boolean))lines++;if(Array.from({length:side},(_,i)=>marked[i*side+i]).every(Boolean))lines++;if(Array.from({length:side},(_,i)=>marked[i*side+(side-1-i)]).every(Boolean))lines++;return{hitCount:marked.filter(Boolean).length,bingoLines:lines}}
+function clickCell(cell,n){if(roomState.phase!=='playing'||String(n)!==String(current)||cell.dataset.current!=='1'||cell.classList.contains('hit'))return;cell.dataset.current='0';cell.classList.add('hit');hitNumbers.add(n);saveBoardState(saved.size);socket.emit('addScore',{...stats(),token:currentToken})}
+function allowCurrent(n){[...board.children].forEach(c=>c.dataset.current='0');if(n==null)return;const target=[...board.children].find(c=>String(c.dataset.number)===String(n)&&!c.classList.contains('hit'));if(target)target.dataset.current='1'}
+function formatElapsed(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
+function clearTimers(){clearInterval(countdownTimer);clearInterval(gameTimer)}
+function showCountdown(endAt){clearTimers();const update=()=>{const sec=Math.max(0,Math.ceil((endAt-Date.now())/1000));gameStatus.textContent=sec>0?`⏳ 遊戲倒數：${sec} 秒`:'▶ 遊戲開始！';if(sec<=0)clearInterval(countdownTimer)};update();countdownTimer=setInterval(update,250)}
+function showGameRemaining(endAt,limited=true){clearTimers();if(!limited||!endAt){gameStatus.textContent='🟢 遊戲進行中｜不限時';return}const update=()=>{const sec=Math.max(0,Math.ceil((endAt-Date.now())/1000));gameStatus.textContent=`🟢 遊戲進行中｜剩餘 ${formatElapsed(sec)}`;if(sec<=0)clearInterval(gameTimer)};update();gameTimer=setInterval(update,250)}
+function speechText(value){if(gameVersion==='number')return String(value);const item=gameItems.find(x=>String(x.id)===String(value));if(gameVersion==='farm'){const n=String(item?.face||String(value).replace('farm-',''));return `圖案 ${Number(n)}`}if(!item)return String(value);const digit={'1':'一','2':'二','3':'三','4':'四','5':'五','6':'六','7':'七','8':'八','9':'九'},name=item.name||item.face||value;if(/^[1-9]萬$/.test(name))return digit[name[0]]+'萬';if(/^[1-9]筒$/.test(name))return digit[name[0]]+'筒';if(/^[1-9](條|索)$/.test(name))return digit[name[0]]+'條';return ({'東':'東風','南':'南風','西':'西風','北':'北風','中':'紅中','發':'發財','白':'白板','春':'春花','夏':'夏花','秋':'秋花','冬':'冬花','梅':'梅花','蘭':'蘭花','菊':'菊花','竹':'竹花'})[name]||name}
+function speak(value){if(!voiceOn||!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(speechText(value));u.lang='zh-TW';u.rate=gameVersion==='number'?.9:.8;speechSynthesis.speak(u)}
+function renderRanking(list){rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank<4?['🥇','🥈','🥉'][p.rank-1]:p.rank}</td><td>${esc(p.name)}</td><td>${p.hitCount}</td><td>${p.bingoLines}</td><td>${p.finishSeconds!=null?formatElapsed(p.finishSeconds):'—'}</td></tr>`).join('')}
+function renderCurrent(value){if(!value){currentNumber.textContent='-';currentCaption.textContent='';return}const item=gameItems.find(x=>String(x.id)===String(value));if(item&&imageVersion()){currentNumber.innerHTML=itemHTML(item,true);currentCaption.textContent=gameVersion==='farm'?'':(item.name||item.face||'')}else{currentNumber.textContent=value;currentCaption.textContent=''}}
+voiceBtn.addEventListener('click',()=>{if(!voiceUnlocked){alert('🔊 聲音提醒\n\n如果你是從 LINE 內直接開啟遊戲，可能無法正常播放語音。\n若沒有聲音，請使用 Chrome、Safari 等手機瀏覽器開啟遊戲網址。');voiceUnlocked=true}if(!('speechSynthesis'in window)){alert('目前這個瀏覽器不支援語音播放，請改用 Chrome 或 Safari 開啟。');return}voiceOn=!voiceOn;voiceBtn.textContent=voiceOn?'🔊 聲音：開':'🔇 聲音：關';if(voiceOn){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('語音已開啟');u.lang='zh-TW';speechSynthesis.speak(u)}else speechSynthesis.cancel()});
+copyBtn.addEventListener('click',async()=>{const side=Math.sqrt(saved.size),cell=side>=7?54:side===6?64:72,pad=20,headerH=55;const canvas=document.createElement('canvas');canvas.width=side*cell+pad*2;canvas.height=side*cell+pad*2+headerH;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff5f8';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#a23866';ctx.font='bold 22px sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText('我的賓果盤｜房間 '+saved.roomId,pad,32);const load=src=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src});const cells=[...board.children];for(let i=0;i<cells.length;i++){const c=cells[i],col=i%side,row=Math.floor(i/side),x=pad+col*cell,y=headerH+pad+row*cell,inner=cell-8;ctx.fillStyle=c.classList.contains('hit')?'#ff5d9e':'#fff';ctx.fillRect(x+4,y+4,inner,inner);ctx.strokeStyle='#efbfd0';ctx.lineWidth=1;ctx.strokeRect(x+4,y+4,inner,inner);if(imageVersion()){const tile=c.querySelector('img');if(tile?.src){try{const img=await load(tile.src),maxW=inner-8,maxH=inner-8,scale=Math.min(maxW/img.naturalWidth,maxH/img.naturalHeight),w=img.naturalWidth*scale,h=img.naturalHeight*scale;ctx.drawImage(img,x+cell/2-w/2,y+cell/2-h/2,w,h)}catch(e){}}}else{ctx.fillStyle=c.classList.contains('hit')?'#fff':'#49323d';ctx.font='bold 21px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.textContent,x+cell/2,y+cell/2)}if(c.classList.contains('hit')){ctx.strokeStyle='#ff2f83';ctx.lineWidth=4;ctx.strokeRect(x+6,y+6,inner-4,inner-4)}}try{const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);copyHint.textContent='✅ 已複製整張賓果盤圖片'}else throw new Error('clipboard unavailable')}catch(e){const link=document.createElement('a');link.download=`bingo-${saved.roomId}.png`;link.href=canvas.toDataURL('image/png');link.click();copyHint.textContent='✅ 此瀏覽器不支援圖片剪貼簿，已改為儲存整張賓果盤圖片'}});
+function showResult(){const s=stats();resultSummary.innerHTML=`🔗 連線：${s.bingoLines} 條<br>✅ 點擊：${s.hitCount} 格`;resultModal.classList.remove('hidden')}
+$('closeResultBtn').addEventListener('click',()=>resultModal.classList.add('hidden'));
+socket.on('joinError',message=>{alert('❌ '+message);location.href='/'});
+socket.on('joinSuccess',data=>{Object.assign(roomState,data);saved.size=data.size;gameVersion=data.version||'number';gameItems=data.items||[];sessionStorage.setItem('bingoPlayer',JSON.stringify(saved));localStorage.setItem('bingoPlayer',JSON.stringify(saved));if(data.scheduledAt){startTimeText.textContent='🕐 開賽：'+new Date(data.scheduledAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}else startTimeText.textContent='🕐 開賽：主控手動開始';goalText.textContent='🏆 完成：'+(data.targetLines===99?'全盤':data.targetLines+' 線');renderBoard(data.size);renderCurrent(data.currentNumber);current=data.currentNumber||null;currentToken=data.drawToken||0;if(data.phase==='waiting')gameStatus.textContent=data.scheduledAt?'等待預定開賽時間':'等待主控開始遊戲';else if(data.phase==='countdown'&&data.countdownEndsAt)showCountdown(data.countdownEndsAt);else if(data.phase==='playing'){showGameRemaining(data.gameEndsAt,data.timeLimitEnabled!==false);allowCurrent(data.currentNumber)}else if(data.phase==='ended'){gameStatus.textContent='🏁 遊戲已結束';showResult()}});
+socket.on('countdownStarted',data=>{roomState.phase='countdown';showCountdown(data.countdownEndsAt)});socket.on('gameStarted',data=>{roomState.phase='playing';roomState.gameEndsAt=data.gameEndsAt;roomState.timeLimitEnabled=data.timeLimitEnabled;showGameRemaining(data.gameEndsAt,data.timeLimitEnabled!==false)});socket.on('numberDrawn',data=>{current=data.number;currentToken=data.token;roomState.currentNumber=data.number;renderCurrent(data.number);allowCurrent(data.number);speak(data.number)});socket.on('rankingUpdate',renderRanking);socket.on('roomDeleted',()=>{alert('此房間已由管理員刪除');sessionStorage.removeItem('bingoPlayer');localStorage.removeItem('bingoPlayer');location.href='/'});socket.on('gameEnded',data=>{clearTimers();roomState.phase='ended';current=null;[...board.children].forEach(c=>c.dataset.current='0');renderCurrent(null);gameStatus.textContent='🏁 遊戲結束';if(data.ranking)renderRanking(data.ranking);showResult()});socket.on('connect',()=>socket.emit('joinRoom',{roomId:saved.roomId,name:saved.name,clientId:saved.clientId}));
 </script>
 </body>
 </html>
