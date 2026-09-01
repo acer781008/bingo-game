@@ -66,6 +66,7 @@ function roomInfo(room) {
     scheduledAt: room.scheduledAt,
     countdownSeconds: room.countdownSeconds,
     countdownEndsAt: room.countdownEndsAt || null,
+    timeLimitEnabled: room.timeLimitEnabled !== false,
     gameSeconds: room.gameSeconds,
     gameEndsAt: room.gameEndsAt || null,
     gameStartedAt: room.gameStartedAt || null,
@@ -73,6 +74,7 @@ function roomInfo(room) {
     currentNumber: room.currentNumber || null,
     drawToken: room.drawToken || 0,
     targetLines: room.targetLines || 1,
+    note: room.note || "",
     endedAt: room.endedAt || null
   };
 }
@@ -131,7 +133,9 @@ function drawNext(room) {
   const numberPoolMax = ({25:50, 36:60, 49:75, 64:90})[room.size] || room.size;
   const pool = room.version === "picture"
     ? MAHJONG_ITEMS.map(item => item.id)
-    : Array.from({length: numberPoolMax}, (_, i) => i + 1);
+    : room.version === "farm"
+      ? FARM_ITEMS.map(item => item.id)
+      : Array.from({length: numberPoolMax}, (_, i) => i + 1);
   const remaining = pool.filter(value => !room.drawn.includes(value));
   if (!remaining.length) return finishGame(room);
 
@@ -151,17 +155,22 @@ function startGame(room) {
 
   room.phase = "playing";
   room.gameStartedAt = Date.now();
-  room.gameEndsAt = room.gameStartedAt + room.gameSeconds * 1000;
+  room.gameEndsAt = room.timeLimitEnabled === false
+    ? null
+    : room.gameStartedAt + room.gameSeconds * 1000;
 
   io.to(room.id).emit("gameStarted", {
-    gameEndsAt: room.gameEndsAt
+    gameEndsAt: room.gameEndsAt,
+    timeLimitEnabled: room.timeLimitEnabled !== false
   });
 
   const t = getTimers(room.id);
 
   drawNext(room);
   t.draw = setInterval(() => drawNext(room), room.drawIntervalMs);
-  t.end = setTimeout(() => finishGame(room), room.gameSeconds * 1000);
+  if (room.timeLimitEnabled !== false) {
+    t.end = setTimeout(() => finishGame(room), room.gameSeconds * 1000);
+  }
 }
 
 function startCountdown(room) {
@@ -247,6 +256,11 @@ const MAHJONG_ITEMS = [
   {id:"bambooFlower",face:"竹",group:"花",name:"竹",file:"42-bamboo.svg"}
 ];
 
+const FARM_ITEMS = Array.from({length: 144}, (_, i) => {
+  const n = String(i + 1).padStart(3, "0");
+  return { id: `farm-${n}`, face: n, group: "farm", name: `圖案 ${n}`, file: `farm-${n}.png` };
+});
+
 app.get("/api/admin/new-room-id", (req, res) => {
   if (!isAdmin(req)) return res.status(401).json({ success: false, message: "未登入管理員" });
   res.json({ success: true, roomId: generateRoomId() });
@@ -263,12 +277,13 @@ app.post("/api/admin/create-room", (req, res) => {
     ? null
     : Number(req.body.scheduledAt);
   const countdownSeconds = Number(req.body.countdownSeconds);
+  const timeLimitEnabled = req.body.timeLimitEnabled !== false;
   const gameSeconds = Number(req.body.gameSeconds);
   const drawIntervalMs = Number(req.body.drawIntervalMs);
   const note = String(req.body.note || "").trim();
   const targetLines = Number(req.body.targetLines || 1);
-  const version = req.body.version === "picture" ? "picture" : "number";
-  const theme = version === "picture" ? "mahjong" : null;
+  const version = ["number", "picture", "farm"].includes(req.body.version) ? req.body.version : "number";
+  const theme = version === "picture" ? "mahjong" : version === "farm" ? "farm" : null;
 
   if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
   if (rooms.has(roomId)) return res.status(400).json({ success: false, message: "房間號碼已存在" });
@@ -276,7 +291,9 @@ app.post("/api/admin/create-room", (req, res) => {
   if (version === "picture" && ![25,36].includes(size)) return res.status(400).json({success:false,message:"麻將版目前只開放 5×5、6×6"});
   if (![30, 60, 90].includes(countdownSeconds)) return res.status(400).json({ success: false, message: "倒數秒數錯誤" });
   if (![1,2,3,5,99].includes(targetLines)) return res.status(400).json({ success: false, message: "完成線數設定錯誤" });
-  if (![60, 90, 120].includes(gameSeconds)) return res.status(400).json({ success: false, message: "遊戲秒數錯誤" });
+  if (timeLimitEnabled && ![60,90,120,180,300,600].includes(gameSeconds)) {
+    return res.status(400).json({ success: false, message: "遊戲時間設定錯誤" });
+  }
   if (![1000,1500,2000,2500,3000,3500,4000,4500,5000].includes(drawIntervalMs)) {
     return res.status(400).json({ success: false, message: "開獎速度錯誤" });
   }
@@ -291,10 +308,11 @@ app.post("/api/admin/create-room", (req, res) => {
     id: roomId,
     version,
     theme,
-    items: version === "picture" ? MAHJONG_ITEMS.slice() : null,
+    items: version === "picture" ? MAHJONG_ITEMS.slice() : version === "farm" ? FARM_ITEMS.slice() : null,
     size,
     scheduledAt,
     countdownSeconds,
+    timeLimitEnabled,
     gameSeconds,
     drawIntervalMs,
     note,
