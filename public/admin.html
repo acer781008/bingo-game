@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/style.css?v=21.10-farm">
+  <link rel="stylesheet" href="/style.css?v=21.11-farm">
   <title>種菜賓果｜主控室</title>
   <style>
     #settingsCard{padding:11px 15px!important;margin-bottom:10px!important}
@@ -41,7 +41,7 @@
       <div class="compact-field"><label>🎮 主控參賽</label><div class="check-field"><input id="adminParticipate" type="checkbox"><span>主控參加本局</span></div></div>
       <div class="compact-field"><label>📝 備註</label><input id="roomNote" type="text" placeholder="可不填"></div>
     </div>
-    <div class="mode-help" id="modeHelp">🌱 種菜版：144 張素材；每位玩家盤面會隨機排列。開賽時間可不填，不填就直接按「開始遊戲」。<div id="farmPreview" class="farm-preview"></div></div>
+    <div class="mode-help" id="modeHelp">🌱 種菜版：144 張總素材庫；每局依盤面自動抽出適量素材。開賽時間可不填，不填就直接按「開始遊戲」。<div id="farmPreview" class="farm-preview"></div></div>
     <button id="createBtn" class="compact-create" type="button">✨ 建立房間</button>
   </div>
 
@@ -77,9 +77,10 @@ function modeLabel(v=el.ver.value){return v==='farm'?'種菜版':v==='picture'?'
 function goalLabel(v=el.targetLines.value){return String(v)==='99'?'全盤':`${v} 條線`}
 function timeLabel(room){if(room.timeLimitEnabled===false)return '不限時';return `${formatElapsed(room.gameSeconds)}（限時）`}
 function itemSrc(item,version){return version==='farm'?`/farm/${item.file}`:`/mahjong/${item.file}`}
+const adminImageCache=new Map();function preloadAdminImages(){if(!activeRoomData||!imageVersion(activeRoomData.version))return;for(const item of activeItems){const src=itemSrc(item,activeRoomData.version);if(adminImageCache.has(src))continue;const img=new Image();img.decoding='async';img.src=src;adminImageCache.set(src,img)}}
 function imageVersion(v){return v==='farm'||v==='picture'}
 function renderCurrent(value){if(!value){el.currentNumber.textContent='-';return}const item=activeItems.find(x=>String(x.id)===String(value));if(item&&imageVersion(activeRoomData?.version)){el.currentNumber.innerHTML=`<img class="admin-current-item" src="${itemSrc(item,activeRoomData.version)}" alt="${esc(item.name||'')}">`}else el.currentNumber.textContent=value}
-function updateVersionUI(){const pic=el.ver.value==='picture';[...el.size.options].forEach(o=>o.disabled=pic&&!['25','36'].includes(o.value));if(pic&&!['25','36'].includes(el.size.value))el.size.value='25';el.modeHelp.firstChild.textContent=el.ver.value==='farm'?'🌱 種菜版：144 張素材；每位玩家盤面會隨機排列。開賽時間可不填，不填就直接按「開始遊戲」。':el.ver.value==='picture'?'🀄 麻將版：42 張素材；支援 5×5、6×6。開賽時間可不填。':'🔢 數字版：玩家盤面隨機。開賽時間可不填。';el.farmPreview.style.display=el.ver.value==='farm'?'flex':'none'}
+function updateVersionUI(){const pic=el.ver.value==='picture';[...el.size.options].forEach(o=>o.disabled=pic&&!['25','36'].includes(o.value));if(pic&&!['25','36'].includes(el.size.value))el.size.value='25';el.modeHelp.firstChild.textContent=el.ver.value==='farm'?'🌱 種菜版：144 張總素材庫；每局依盤面自動抽出適量素材。開賽時間可不填，不填就直接按「開始遊戲」。':el.ver.value==='picture'?'🀄 麻將版：42 張素材；支援 5×5、6×6。開賽時間可不填。':'🔢 數字版：玩家盤面隨機。開賽時間可不填。';el.farmPreview.style.display=el.ver.value==='farm'?'flex':'none'}
 function updateTimeMode(){el.gameSeconds.disabled=el.timeMode.value==='unlimited'}
 el.ver.addEventListener('change',updateVersionUI);el.timeMode.addEventListener('change',updateTimeMode);updateVersionUI();updateTimeMode();
 async function generateRoomId(){if(activeRoom)return alert('房間建立後房號已鎖定。');try{const r=await fetch('/api/admin/new-room-id');const d=await r.json();if(!d.success)return alert('❌ '+d.message);el.roomId.value=d.roomId}catch(e){alert('❌ 無法產生房號，請稍後再試')}}

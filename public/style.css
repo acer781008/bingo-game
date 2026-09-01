@@ -305,3 +305,10 @@ body.admin-page #pictureOptions p{margin:3px 0 6px!important}
   }
 }
 
+
+/* ===== V21.11 種菜版效能與點擊回饋 ===== */
+#adminBoard .cell.hit{position:relative;background:#e83e86!important;border-color:#b91f5d!important;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)!important}
+#adminBoard .cell.hit img{opacity:.36!important;filter:saturate(.55) brightness(.82)!important;transform:scale(.94)}
+#adminBoard .cell.hit::after{content:"✓";position:absolute;top:4px;right:5px;width:23px;height:23px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(154,24,79,.94);color:#fff;font-size:17px;font-weight:900;pointer-events:none}
+#board .cell,#adminBoard .cell{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#board .cell[data-current="1"],#adminBoard .cell[data-current="1"]{cursor:pointer}
