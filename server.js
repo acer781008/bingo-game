@@ -73,6 +73,7 @@ function roomInfo(room) {
     drawIntervalMs: room.drawIntervalMs,
     currentNumber: room.currentNumber || null,
     drawToken: room.drawToken || 0,
+    drawn: Array.isArray(room.drawn) ? room.drawn.slice() : [],
     targetLines: room.targetLines || 1,
     note: room.note || "",
     endedAt: room.endedAt || null
@@ -311,12 +312,32 @@ app.post("/api/admin/create-room", (req, res) => {
     items: version === "picture" ? MAHJONG_ITEMS.slice() : version === "farm" ? (() => {
       // V21.11: 144 張只當總素材庫；每局依盤面抽出較小素材池，避免叫號過散。
       const poolSize = ({25:45, 36:60, 49:75, 64:90})[size] || 45;
+      // V21.12: 避免同一局出現外觀重複的素材（來源素材中有少數同圖不同編號）。
+      const duplicateGroups = [
+        ["farm-046","farm-131"],
+        ["farm-047","farm-132"],
+        ["farm-048","farm-099","farm-133"],
+        ["farm-049","farm-050"],
+        ["farm-101","farm-102"],
+        ["farm-123","farm-126"]
+      ];
+      const groupById = new Map();
+      duplicateGroups.forEach((group, idx) => group.forEach(id => groupById.set(id, `dup-${idx}`)));
       const shuffled = FARM_ITEMS.slice();
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
-      return shuffled.slice(0, poolSize);
+      const picked = [];
+      const usedGroups = new Set();
+      for (const item of shuffled) {
+        const group = groupById.get(item.id) || item.id;
+        if (usedGroups.has(group)) continue;
+        usedGroups.add(group);
+        picked.push(item);
+        if (picked.length >= poolSize) break;
+      }
+      return picked;
     })() : null,
     size,
     scheduledAt,
