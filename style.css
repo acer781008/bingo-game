@@ -1,0 +1,326 @@
+*{box-sizing:border-box}body{margin:0;font-family:"Microsoft JhengHei",Arial;background:#fff5f8;color:#49323d}.top{padding:18px 22px;background:linear-gradient(90deg,#ff4f9a,#ff78ad);color:#fff}.top h1{margin:0}.wrap{width:min(1050px,94%);margin:20px auto}.card{background:#fff;border:1px solid #ffd0df;border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 25px #dba6b833}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.full{grid-column:1/-1}label{display:block;font-weight:800;color:#a23866;margin-bottom:6px}input,select,button{width:100%;padding:13px;border:1px solid #efbfd0;border-radius:12px;font-size:16px;background:#fff}button{background:#ff4f9a;color:#fff;border:0;font-weight:800;cursor:pointer}.purple{background:#7355d4}.status{text-align:center;font-size:21px;font-weight:900;color:#a23866;margin:14px}.number{text-align:center;font-size:72px;font-weight:900;color:#ff3f8f}.board{display:grid;gap:7px;max-width:700px;margin:auto}.cell{aspect-ratio:1;border:3px solid #d9779f;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,3vw,26px);font-weight:900;background:#fff}.cell.hit{background:#ff5d9e;color:#fff;border-color:#ff5d9e}.leader{width:100%;border-collapse:collapse}.leader th,.leader td{padding:9px;border-bottom:1px solid #f4d9e3;text-align:center}.row{display:flex;gap:10px;align-items:end}.row>*{flex:1}.login{max-width:450px;margin:8vh auto}.hidden{display:none}.muted{color:#88737d;font-size:14px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{width:96%;margin:10px auto}.card{padding:13px}.top h1{font-size:21px}.number{font-size:58px}.board{gap:5px}.leader th,.leader td{font-size:12px;padding:6px 2px}}
+.picture-cell{
+  min-height:84px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+@media (max-width:600px){
+  .picture-cell{min-height:70px;padding:4px 2px}
+  .picture-cell small{font-size:10px!important}
+}
+
+.mahjong-preview{background:#fffdf7;border:1px solid #d8ccb3;border-radius:9px;padding:6px;text-align:center}
+.mahjong-preview div{font-size:22px;font-weight:900}
+.mahjong-preview small{font-size:10px;color:#75654d}
+.mahjong-face{width:100%;height:100%;min-height:52px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fffef8,#f4ecd7);border:1px solid #d6c6a6;border-radius:7px;font-size:clamp(17px,4vw,30px);font-weight:900;color:#b21f1f}
+.mahjong-face.字{color:#176a34}.mahjong-face.花{color:#8a3d8e}.mahjong-face.吉{color:#9b6700}
+.current-mahjong{display:inline-flex;min-width:90px;min-height:110px;align-items:center;justify-content:center;padding:10px 18px;background:linear-gradient(#fffef8,#f4ecd7);border:2px solid #d3bf94;border-radius:12px;box-shadow:0 6px 0 #8aaa72;font-size:46px;font-weight:900;color:#b21f1f}
+@media(max-width:600px){.mahjong-face{min-height:42px;font-size:clamp(14px,5vw,24px)}.picture-cell{min-height:56px;padding:3px}}
+
+.picture-cell{background:#f3ead4!important;padding:5px!important;border-radius:10px}
+.mahjong-face{box-sizing:border-box;width:100%;height:100%;min-height:72px;border:1px solid #d6c8aa;border-radius:9px;background:linear-gradient(145deg,#fffef9,#f9f4e8 72%,#e8dec5);box-shadow:inset 0 -4px 0 #e1d4b8,0 3px 0 #5d9868,0 5px 9px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-family:"Microsoft JhengHei",sans-serif}
+.mahjong-face.wan{flex-direction:column;line-height:.95}.mahjong-face.wan b{font-size:clamp(24px,5vw,38px);color:#151515}.mahjong-face.wan span{font-size:clamp(17px,3.5vw,27px);color:#c82424;font-weight:900;margin-top:3px}
+.mahjong-face.bamboo{flex-direction:column;gap:3px}.bamboo-pips{width:76%;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;justify-items:center}.bamboo-pips i{width:7px;height:20px;border-radius:5px;background:linear-gradient(90deg,#176c3b,#5fae68,#176c3b);border:1px solid #0c5b30;position:relative}.bamboo-pips i:after{content:"";position:absolute;left:1px;right:1px;top:7px;height:3px;background:#d73a32}.mahjong-face.bamboo small{font-size:10px;color:#176c3b;font-weight:800}
+.mahjong-face.honor-tile{font-size:clamp(28px,6vw,45px);font-weight:900;color:#171717}.mahjong-face.red-dragon{color:#d11f26}.mahjong-face.green-dragon{color:#087b3b}.white-frame{width:54%;height:60%;border:4px double #276d55;border-radius:4px}
+.current-tile-art{width:110px!important;height:140px!important;min-height:140px!important;margin:4px auto}.current-tile-art.wan b{font-size:52px}.current-tile-art.wan span{font-size:35px}
+@media(max-width:600px){.picture-cell{min-height:64px!important;padding:3px!important}.mahjong-face{min-height:58px}.bamboo-pips i{width:5px;height:14px}}
+
+/* V20.1 傳統彩色麻將圖片版 */
+.picture-cell{background:transparent!important;padding:3px!important;overflow:visible}
+.mahjong-tile-image{display:block;width:100%;height:100%;max-height:118px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));user-select:none}
+.current-mahjong-image{width:118px!important;height:158px!important;max-height:none!important;margin:4px auto}
+.picture-cell.hit .mahjong-tile-image{opacity:.48;transform:scale(.96)}
+@media(max-width:600px){
+ .picture-cell{padding:1px!important}
+ .mahjong-tile-image{max-height:86px}
+ .current-mahjong-image{width:94px!important;height:126px!important}
+}
+
+.admin-current-mahjong{
+  display:block;
+  width:92px;
+  height:124px;
+  object-fit:contain;
+  margin:8px auto;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.15));
+}
+@media(max-width:600px){
+  .admin-current-mahjong{width:78px;height:105px}
+}
+
+/* 香港傳統麻將素材版 */
+.mahjong-preview img{width:48px;height:62px;object-fit:contain;display:block;margin:auto}
+.mahjong-preview small{display:block;margin-top:3px;font-size:11px}
+
+/* V20.1 麻將版：手機/電腦已點擊狀態強化 */
+#board .cell.hit{
+  position:relative;
+  background:#e83e86 !important;
+  border-color:#c82669 !important;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.28);
+}
+#board .cell.hit img{
+  opacity:.42;
+  filter:saturate(.65) brightness(.92);
+}
+#board .cell.hit::after{
+  content:"✓";
+  position:absolute;
+  top:5px;
+  right:7px;
+  width:25px;
+  height:25px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  background:rgba(154,24,79,.92);
+  color:#fff;
+  font-size:19px;
+  font-weight:900;
+  line-height:1;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);
+  pointer-events:none;
+}
+@media (max-width:600px){
+  #board .cell.hit::after{
+    top:4px;
+    right:5px;
+    width:22px;
+    height:22px;
+    font-size:17px;
+  }
+}
+
+/* V21 固定可愛動物背景＋新版主控 */
+html{min-height:100%}
+body.cute-theme{
+  min-height:100vh;
+  background:#fff7f0 url('/cute-animal-bg.svg') center/cover fixed no-repeat;
+}
+body.cute-theme .top{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(90deg,rgba(255,79,154,.94),rgba(255,140,176,.92));
+  box-shadow:0 5px 18px rgba(170,70,110,.16)
+}
+body.cute-theme .top .lobby-btn{width:auto;max-width:220px;padding:10px 14px;background:rgba(255,255,255,.92);color:#a23866;border:1px solid rgba(255,255,255,.7)}
+body.cute-theme .card{background:rgba(255,255,255,.91);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);border-color:rgba(255,187,209,.8);box-shadow:0 10px 28px rgba(145,83,105,.16)}
+textarea{width:100%;padding:13px;border:1px solid #efbfd0;border-radius:12px;font-size:16px;background:#fff;font-family:inherit;resize:vertical}
+.soft-panel,.share-info{padding:16px;border:1px solid #efd4df;border-radius:16px;background:rgba(255,248,251,.9)}
+.mahjong-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+.inline-actions,.share-buttons,.control-buttons{display:flex;gap:10px;align-items:center}
+.inline-actions input{flex:1;font-weight:900;font-size:20px;text-align:center;letter-spacing:3px}
+.inline-actions button{width:auto;min-width:170px}
+.share-buttons{margin:10px 0 14px}.share-buttons button{flex:1}
+.share-info{white-space:pre-line;line-height:1.8;margin-top:8px}
+.control-head{display:flex;justify-content:space-between;align-items:flex-end;gap:15px;margin-bottom:16px}
+.control-head>div:first-child{min-width:150px}.control-buttons{justify-content:flex-end}.control-buttons button{width:auto;min-width:145px}
+.big-room{display:block;font-size:30px;color:#ff3f8f;letter-spacing:3px}
+.room-meta{align-items:center;margin:12px 0}
+.welcome-animal{text-align:center;font-size:48px;letter-spacing:8px;margin:2px 0 8px}
+.room-hint{padding:10px 12px;border-radius:12px;background:#fff5f8;color:#a23866;font-weight:800;text-align:center}
+button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:700px){
+  body.cute-theme{background-attachment:scroll;background-position:center top}
+  body.cute-theme .top{padding:14px 12px}.top h1{flex:1}.top .lobby-btn{font-size:12px;padding:9px 10px;max-width:150px}
+  .inline-actions,.share-buttons,.control-head,.control-buttons{flex-direction:column;align-items:stretch}
+  .inline-actions button,.control-buttons button{width:100%;min-width:0}.control-head>div:first-child{min-width:0}
+  .share-buttons button{width:100%}.welcome-animal{font-size:38px}
+}
+
+/* V21.2 compact admin control */
+.compact-share{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.compact-status{margin-top:12px;padding:10px 14px}
+.compact-current{margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.72);font-weight:800;color:#7b294d;text-align:center}
+.compact-current #num{font-size:28px;margin-left:8px}
+.compact-current .admin-current-mahjong{height:54px;vertical-align:middle}
+@media(max-width:650px){.compact-share{grid-template-columns:1fr}.control-head{gap:10px}.control-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.control-buttons button:first-child{grid-column:1/-1}}
+
+
+/* V21.3 主控左右雙欄：排行榜固定右側，分享按鈕上移 */
+.admin-dashboard{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(440px,.95fr);gap:18px;align-items:start}
+.admin-dashboard>.card{margin-bottom:0}
+.ranking-card{position:sticky;top:18px;overflow-x:auto}
+.ranking-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ranking-head h2{margin:0}.rank-copy-btn{width:auto;min-width:150px;padding:10px 13px}
+.share-up{margin:4px 0 10px}
+.ranking-card .leader{min-width:600px}
+.ranking-card .leader th,.ranking-card .leader td{white-space:nowrap;padding:9px 6px}
+@media(min-width:1100px){body.admin-page .wrap{width:min(1500px,96%)}}
+@media(max-width:1050px){.admin-dashboard{grid-template-columns:1fr}.ranking-card{position:static}.ranking-card .leader{min-width:560px}}
+@media(max-width:650px){.ranking-head{align-items:stretch;flex-direction:column}.rank-copy-btn{width:100%}}
+
+
+/* V21.4 真正緊湊主控修正 */
+body.admin-page .wrap{margin-top:12px}
+body.admin-page .wrap>.card:first-child{padding:14px 18px;margin-bottom:12px}
+body.admin-page .wrap>.card:first-child h2{margin:0 0 10px;font-size:20px}
+body.admin-page .wrap>.card:first-child .grid{gap:8px 12px}
+body.admin-page .wrap>.card:first-child label{margin-bottom:3px;font-size:14px}
+body.admin-page .wrap>.card:first-child input,
+body.admin-page .wrap>.card:first-child select{padding:9px 11px;min-height:40px}
+body.admin-page .room-id-box{grid-column:1/-1}
+body.admin-page .inline-actions{gap:8px}
+body.admin-page .inline-actions input{font-size:18px;min-height:40px}
+body.admin-page .inline-actions button{padding:9px 12px;min-height:40px}
+body.admin-page .compact-note{margin-top:8px}
+body.admin-page .compact-note label{margin-bottom:3px}
+body.admin-page .compact-note input{padding:9px 11px;min-height:40px}
+body.admin-page .compact-create{margin-top:8px;padding:10px}
+body.admin-page #pictureOptions{margin-top:8px!important}
+body.admin-page #pictureOptions .soft-panel{padding:10px}
+body.admin-page #pictureOptions p{margin:3px 0 6px!important}
+
+.room-live-strip{
+  display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px;
+  margin-top:10px;padding:9px 10px;border:1px solid #efd4df;border-radius:12px;
+  background:rgba(255,248,251,.82);text-align:center;align-items:center;
+}
+.room-live-strip b{font-size:14px;color:#6f4055}
+.room-live-strip #st{color:#a23866}
+.live-current #num{font-size:18px;color:#ff3f8f;margin-left:3px}
+.live-current .admin-current-mahjong{display:inline-block;width:34px;height:44px;margin:0 3px;vertical-align:middle}
+
+.ranking-card{overflow-x:hidden}
+.ranking-card .leader{min-width:0!important;width:100%;table-layout:fixed}
+.ranking-card .leader th,.ranking-card .leader td{white-space:normal!important;padding:8px 4px;font-size:13px;overflow-wrap:anywhere}
+.ranking-card .leader th:nth-child(1),.ranking-card .leader td:nth-child(1){width:11%}
+.ranking-card .leader th:nth-child(2),.ranking-card .leader td:nth-child(2){width:27%}
+.ranking-card .leader th:nth-child(3),.ranking-card .leader td:nth-child(3){width:20%}
+.ranking-card .leader th:nth-child(4),.ranking-card .leader td:nth-child(4){width:17%}
+.ranking-card .leader th:nth-child(5),.ranking-card .leader td:nth-child(5){width:25%}
+
+@media(max-width:700px){
+ body.admin-page .wrap>.card:first-child .grid{grid-template-columns:1fr 1fr}
+ body.admin-page .room-id-box{grid-column:1/-1}
+ .room-live-strip{grid-template-columns:1fr}
+ .ranking-card .leader th,.ranking-card .leader td{font-size:11px;padding:6px 2px}
+}
+@media(max-width:480px){
+ body.admin-page .wrap>.card:first-child .grid{grid-template-columns:1fr}
+ body.admin-page .room-id-box{grid-column:1}
+}
+
+
+/* ===== V21.8 玩家手機盤面完整顯示修正 ===== */
+#board{
+  width:100%;
+  max-width:700px;
+  min-width:0;
+}
+#board .cell{
+  min-width:0;
+  max-width:100%;
+  width:100%;
+  overflow:hidden;
+}
+#board .picture-cell{
+  min-width:0 !important;
+  width:100% !important;
+}
+#board .mahjong-tile-image{
+  min-width:0 !important;
+  width:100% !important;
+  max-width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+}
+
+@media(max-width:700px){
+  /* 玩家盤面卡片盡量利用手機可用寬度 */
+  body:not(.admin-page) .wrap{
+    width:100% !important;
+    max-width:100% !important;
+    padding-left:6px !important;
+    padding-right:6px !important;
+  }
+  body:not(.admin-page) .card{
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+
+  #board{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+  }
+
+  #board .cell{
+    min-width:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    padding:1px !important;
+    border-width:1.5px !important;
+    border-radius:8px !important;
+    line-height:1 !important;
+  }
+
+  /* 5×5 保持舒服大小 */
+  #board[data-side="5"]{gap:4px !important;}
+  #board[data-side="5"] .cell{font-size:clamp(18px,5vw,25px) !important;}
+
+  /* 麻將 6×6：六欄必須完整塞進手機寬度 */
+  #board[data-side="6"]{gap:3px !important;}
+  #board[data-side="6"] .cell{font-size:clamp(15px,4.1vw,21px) !important;}
+  #board[data-side="6"] .picture-cell{
+    min-height:0 !important;
+    padding:0 !important;
+  }
+  #board[data-side="6"] .mahjong-tile-image{
+    max-height:none !important;
+    width:100% !important;
+    height:100% !important;
+  }
+
+  /* 數字 7×7 */
+  #board[data-side="7"]{gap:2.5px !important;}
+  #board[data-side="7"] .cell{
+    font-size:clamp(13px,3.6vw,18px) !important;
+    border-radius:6px !important;
+    padding:0 !important;
+  }
+
+  /* 數字 8×8 */
+  #board[data-side="8"]{gap:2px !important;}
+  #board[data-side="8"] .cell{
+    font-size:clamp(12px,3.3vw,17px) !important;
+    border-radius:5px !important;
+    padding:0 !important;
+  }
+
+  /* 勾勾也跟著縮，避免在 6/7/8 欄蓋住內容 */
+  #board[data-side="6"] .cell.hit::after{
+    width:18px !important;height:18px !important;
+    font-size:14px !important;top:2px !important;right:2px !important;
+  }
+  #board[data-side="7"] .cell.hit::after,
+  #board[data-side="8"] .cell.hit::after{
+    width:15px !important;height:15px !important;
+    font-size:11px !important;top:1px !important;right:1px !important;
+  }
+}
+
+
+/* ===== V21.11 種菜版效能與點擊回饋 ===== */
+#adminBoard .cell.hit{position:relative;background:#e83e86!important;border-color:#b91f5d!important;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)!important}
+#adminBoard .cell.hit img{opacity:.36!important;filter:saturate(.55) brightness(.82)!important;transform:scale(.94)}
+#adminBoard .cell.hit::after{content:"✓";position:absolute;top:4px;right:5px;width:23px;height:23px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(154,24,79,.94);color:#fff;font-size:17px;font-weight:900;pointer-events:none}
+#board .cell,#adminBoard .cell{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#board .cell[data-current="1"],#adminBoard .cell[data-current="1"]{cursor:pointer}
+
+/* V21.12 玩家盤：手機點擊與 7×7 版面優化 */
+#board .cell{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+#board .cell[data-current="1"]{cursor:pointer}
+@media(max-width:700px){
+  body:not(.admin-page) .wrap{width:99%;}
+  body:not(.admin-page) .card:has(#board){padding-left:5px;padding-right:5px;}
+  #board[data-side="7"]{gap:2px;width:100%;max-width:none;}
+  #board[data-side="7"] .cell{border-width:2px;border-radius:7px;min-height:0!important;padding:1px!important;}
+  #board[data-side="7"] .farm-tile-image{width:100%;height:100%;object-fit:contain;}
+  #board[data-side="7"] .cell.hit::after{top:1px;right:2px;font-size:14px;}
+}

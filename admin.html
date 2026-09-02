@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/style.css?v=21.14-farm">
+  <title>種菜賓果｜主控室</title>
+  <style>
+    #settingsCard{padding:11px 15px!important;margin-bottom:10px!important}
+    #settingsCard h2{margin:0!important;font-size:19px!important}
+    .settings-title-row{margin-bottom:7px}.version-mark{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#fff0f6;color:#d63d7d;font-size:11px;vertical-align:middle}
+    .settings-compact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 8px}
+    .compact-field{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:6px;min-height:33px}.compact-field label{margin:0!important;font-size:12px!important;white-space:nowrap}.compact-field input,.compact-field select{min-height:30px!important;height:30px!important;padding:3px 7px!important;font-size:12px!important;border-radius:8px!important}
+    .compact-span-2{grid-column:span 2}.compact-span-3{grid-column:1/-1}.room-number-compact{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:7px}.room-number-compact #rid{text-align:center;font-size:17px!important;font-weight:900;letter-spacing:4px}.room-number-compact button{min-height:30px!important;height:30px!important;padding:3px 7px!important;font-size:12px!important;border-radius:8px!important}
+    .compact-create{margin-top:6px!important;min-height:33px!important;height:33px!important;padding:4px 9px!important;border-radius:9px!important}
+    .mode-help{margin-top:6px;padding:7px 9px;border-radius:10px;background:#fff8fb;border:1px solid #f0d9e2;font-size:12px;color:#775c68}.farm-preview{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.farm-preview img{width:42px;height:42px;object-fit:contain;background:#fff;border:1px solid #efd4df;border-radius:8px;padding:2px}
+    .check-field{display:flex;align-items:center;gap:8px}.check-field input{width:18px!important;height:18px!important;min-height:18px!important}.check-field span{font-size:13px;font-weight:800;color:#7b294d}
+    .room-live-strip{grid-template-columns:.8fr 1.35fr 1.2fr!important}.admin-play-panel{margin-top:10px;padding:10px;border:1px solid #efd4df;border-radius:14px;background:#fffafb}.admin-play-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.admin-play-head b{font-size:15px}.admin-play-stat{font-size:12px;color:#88737d}.admin-board{display:grid;gap:4px;width:min(560px,100%);margin:auto}.admin-board .cell{padding:2px;font-size:18px}.admin-board .farm-tile-image,.admin-board .mahjong-tile-image{width:100%;height:100%;object-fit:contain;display:block}.admin-current-item{display:inline-block;width:58px;height:58px;object-fit:contain;vertical-align:middle}.live-current{min-width:0}
+    @media(max-width:1100px){.settings-compact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.compact-span-3{grid-column:1/-1}.compact-span-2{grid-column:span 2}}
+    @media(max-width:700px){.settings-compact-grid{grid-template-columns:1fr}.compact-field,.compact-span-2,.compact-span-3{grid-column:1;grid-template-columns:96px minmax(0,1fr)}.room-number-compact{grid-template-columns:1fr}.room-number-compact button{height:auto!important}.room-live-strip{grid-template-columns:1fr!important}.admin-play-head{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body class="cute-theme admin-page">
+<div class="top"><h1>🌱 種菜賓果｜主控室</h1><button class="lobby-btn" onclick="goLobby()">🏠 返回遊戲大廳</button></div>
+<div class="wrap">
+  <div class="card" id="settingsCard">
+    <div class="settings-title-row"><h2>🎮 遊戲設定 <small class="version-mark">V21.13 FARM</small></h2></div>
+    <div class="settings-compact-grid">
+      <div class="compact-field"><label>遊戲版本</label><select id="ver"><option value="farm" selected>🌱 種菜版</option><option value="number">🔢 數字版</option><option value="picture">🀄 麻將版</option></select></div>
+      <div class="compact-field"><label>盤面格數</label><select id="size"><option value="25">5×5</option><option value="36">6×6</option><option value="49">7×7</option><option value="64">8×8</option></select></div>
+      <div class="compact-field"><label>🏆 完成條件</label><select id="targetLines"><option value="1">1 線</option><option value="2">2 線</option><option value="3">3 線</option><option value="5">5 線</option><option value="99">全盤</option></select></div>
+
+      <div class="compact-field compact-span-2"><label>🔢 房間號碼</label><div class="room-number-compact"><input id="rid" readonly><button id="newRoomBtn" class="purple" type="button">🔄 產生新房號</button></div></div>
+      <div class="compact-field"><label>📅 開賽時間</label><input id="when" type="datetime-local" title="可不填；不填就由主控手動開始"></div>
+
+      <div class="compact-field"><label>⏱️ 遊戲模式</label><select id="timeMode"><option value="limited" selected>限時模式</option><option value="unlimited">不限時</option></select></div>
+      <div class="compact-field"><label>⏱️ 遊戲時間</label><select id="game"><option value="60">1 分鐘</option><option value="90">1 分30秒</option><option value="120">2 分鐘</option><option value="180" selected>3 分鐘（預設）</option><option value="300">5 分鐘</option><option value="600">10 分鐘</option></select></div>
+      <div class="compact-field"><label>⏳ 開始前倒數</label><select id="count"><option value="30">30 秒</option><option value="60">60 秒</option><option value="90">90 秒</option></select></div>
+
+      <div class="compact-field"><label>⚡ 叫號速度</label><select id="speed"><option value="1000">1秒</option><option value="1500">1.5秒</option><option value="2000">2秒</option><option value="2500">2.5秒</option><option value="3000">3秒</option><option value="3500">3.5秒</option><option value="4000" selected>4秒</option><option value="4500">4.5秒</option><option value="5000">5秒</option></select></div>
+      <div class="compact-field"><label>📝 備註</label><input id="roomNote" type="text" placeholder="可不填"></div>
+    </div>
+    <div class="mode-help" id="modeHelp">🌱 種菜版：144 張總素材庫；每局依盤面自動抽出適量素材。開賽時間可不填，不填就直接按「開始遊戲」。<div id="farmPreview" class="farm-preview"></div></div>
+    <button id="createBtn" class="compact-create" type="button">✨ 建立房間</button>
+  </div>
+
+  <div id="ctl" class="hidden admin-dashboard">
+    <div class="card admin-control-card">
+      <div class="control-head">
+        <div><label>房間</label><b id="show" class="big-room"></b></div>
+        <div class="control-buttons"><button id="startBtn" type="button">▶ 開始遊戲</button><button id="endBtn" type="button">⏹️ 立即結束</button><button id="deleteBtn" class="purple" type="button">🗑️ 刪除房間</button></div>
+      </div>
+      <div class="share-buttons compact-share share-up"><button id="copyUrlBtn" type="button">🔗 複製玩家連結</button><button id="copyShareBtn" class="purple" type="button">📋 複製分享文字</button></div>
+      <div class="room-live-strip"><b id="playerCount">👥 本局玩家：0 人</b><b class="live-current">📣 目前叫號：<span id="num">-</span></b><b id="st">🟡 等待中</b></div>
+    </div>
+    <div class="card ranking-card"><div class="ranking-head"><h2>🏆 即時排行榜</h2><button id="copyRankBtn" class="purple rank-copy-btn" type="button">📋 複製排行榜</button></div><table class="leader"><thead><tr><th>排名</th><th>玩家</th><th>點擊格數</th><th>賓果線</th><th>完成時間</th></tr></thead><tbody id="rb"></tbody></table></div>
+  </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket=io(); const $=id=>document.getElementById(id);
+const el={ver:$('ver'),size:$('size'),roomId:$('rid'),newRoomBtn:$('newRoomBtn'),scheduledAt:$('when'),timeMode:$('timeMode'),gameSeconds:$('game'),countdownSeconds:$('count'),drawIntervalMs:$('speed'),targetLines:$('targetLines'),roomNote:$('roomNote'),createBtn:$('createBtn'),control:$('ctl'),showRoom:$('show'),status:$('st'),currentNumber:$('num'),playerCount:$('playerCount'),startBtn:$('startBtn'),rankBody:$('rb'),modeHelp:$('modeHelp'),farmPreview:$('farmPreview')};
+let activeRoom=''; let activeRoomData=null; let activeItems=[]; let shareText=''; let countdownTimer=null; let gameTimer=null;
+const ACTIVE_KEY='bingoAdminActiveRoom';
+const preview=[1,8,17,32,55,76,101,144].map(n=>`farm-${String(n).padStart(3,'0')}.png`); el.farmPreview.innerHTML=preview.map(f=>`<img src="/farm/${f}" alt="${f}">`).join('');
+function goLobby(){location.href='https://game-lobby-eo8o.onrender.com/'}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function formatDate(ms){if(!ms)return '未設定（手動開賽）';return new Date(ms).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}
+function formatElapsed(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
+function boardLabel(size){return ({25:'5×5',36:'6×6',49:'7×7',64:'8×8'})[Number(size)]||size}
+function modeLabel(v=el.ver.value){return v==='farm'?'種菜版':v==='picture'?'麻將版':'數字版'}
+function goalLabel(v=el.targetLines.value){return String(v)==='99'?'全盤':`${v} 條線`}
+function timeLabel(room){if(room.timeLimitEnabled===false)return '不限時';return `${formatElapsed(room.gameSeconds)}（限時）`}
+function itemSrc(item,version){return version==='farm'?`/farm/${item.file}`:`/mahjong/${item.file}`}
+const adminImageCache=new Map();function preloadAdminImages(){if(!activeRoomData||!imageVersion(activeRoomData.version))return;for(const item of activeItems){const src=itemSrc(item,activeRoomData.version);if(adminImageCache.has(src))continue;const img=new Image();img.decoding='async';img.src=src;adminImageCache.set(src,img)}}
+function imageVersion(v){return v==='farm'||v==='picture'}
+function renderCurrent(value){if(!value){el.currentNumber.textContent='-';return}const item=activeItems.find(x=>String(x.id)===String(value));if(item&&imageVersion(activeRoomData?.version)){el.currentNumber.innerHTML=`<img class="admin-current-item" src="${itemSrc(item,activeRoomData.version)}" alt="${esc(item.name||'')}">`}else el.currentNumber.textContent=value}
+function updateVersionUI(){const pic=el.ver.value==='picture';[...el.size.options].forEach(o=>o.disabled=pic&&!['25','36'].includes(o.value));if(pic&&!['25','36'].includes(el.size.value))el.size.value='25';el.modeHelp.firstChild.textContent=el.ver.value==='farm'?'🌱 種菜版：144 張總素材庫；每局依盤面自動抽出適量素材。開賽時間可不填，不填就直接按「開始遊戲」。':el.ver.value==='picture'?'🀄 麻將版：42 張素材；支援 5×5、6×6。開賽時間可不填。':'🔢 數字版：玩家盤面隨機。開賽時間可不填。';el.farmPreview.style.display=el.ver.value==='farm'?'flex':'none'}
+function updateTimeMode(){el.gameSeconds.disabled=el.timeMode.value==='unlimited'}
+el.ver.addEventListener('change',updateVersionUI);el.timeMode.addEventListener('change',updateTimeMode);updateVersionUI();updateTimeMode();
+async function generateRoomId(){if(activeRoom)return alert('房間建立後房號已鎖定。');try{const r=await fetch('/api/admin/new-room-id');const d=await r.json();if(!d.success)return alert('❌ '+d.message);el.roomId.value=d.roomId}catch(e){alert('❌ 無法產生房號，請稍後再試')}}
+function parseOptionalSchedule(){const text=el.scheduledAt.value;if(!text)return null;const ms=new Date(text).getTime();if(!Number.isFinite(ms)||ms<=Date.now())throw new Error('開賽時間必須晚於現在');return ms}
+function playerUrl(){return location.origin+'/index.html?room='+encodeURIComponent(activeRoom||el.roomId.value)}
+function buildShareText(room){return ['🌱 種菜賓果挑戰','🔗 挑戰連結：'+playerUrl(),'🔢 房間號：'+room.roomId,'🎮 遊戲模式：'+modeLabel(room.version),'📐 盤面大小：'+boardLabel(room.size),'🏆 完成條件：'+(room.targetLines===99?'全盤':room.targetLines+' 條線'),'📅 開賽時間：'+formatDate(room.scheduledAt),'⏱️ 遊戲時間：'+timeLabel(room),`⚡ 叫號速度：${Number(room.drawIntervalMs)/1000} 秒／個`,'📝 備註：'+(room.note||el.roomNote.value.trim()||'無')].join('\n')}
+async function copyText(text,ok){try{await navigator.clipboard.writeText(text);alert('✅ '+ok)}catch(e){alert('❌ 無法自動複製，請長按文字手動複製')}}
+function setLocked(locked){el.newRoomBtn.disabled=locked;el.createBtn.disabled=locked;el.roomId.disabled=locked;el.ver.disabled=locked;el.size.disabled=locked;el.targetLines.disabled=locked;el.timeMode.disabled=locked;el.gameSeconds.disabled=locked||el.timeMode.value==='unlimited';el.countdownSeconds.disabled=locked;el.drawIntervalMs.disabled=locked;el.scheduledAt.disabled=locked;el.roomNote.disabled=locked}
+async function createRoom(){if(!el.roomId.value)await generateRoomId();let scheduledAt;try{scheduledAt=parseOptionalSchedule()}catch(e){return alert('❌ '+e.message)}const body={version:el.ver.value,roomId:el.roomId.value,size:Number(el.size.value),scheduledAt,timeLimitEnabled:el.timeMode.value==='limited',gameSeconds:Number(el.gameSeconds.value),countdownSeconds:Number(el.countdownSeconds.value),drawIntervalMs:Number(el.drawIntervalMs.value),note:el.roomNote.value.trim(),targetLines:Number(el.targetLines.value)};const r=await fetch('/api/admin/create-room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.success)return alert('❌ '+d.message);activateRoom(d.room);alert('✅ 房間建立成功')}
+function activateRoom(room){activeRoom=room.roomId;activeRoomData=room;activeItems=room.items||[];localStorage.setItem(ACTIVE_KEY,activeRoom);el.showRoom.textContent=activeRoom;el.control.classList.remove('hidden');setLocked(true);shareText=buildShareText(room);socket.emit('watchRoom',{roomId:activeRoom});applyRoomState(room)}
+function renderRanking(list){el.rankBody.innerHTML=(list||[]).map(p=>`<tr><td>${p.rank<4?['🥇','🥈','🥉'][p.rank-1]:p.rank}</td><td>${esc(p.name)}</td><td>${p.hitCount}</td><td>${p.bingoLines}條</td><td>${p.finishSeconds!=null?formatElapsed(p.finishSeconds):'—'}</td></tr>`).join('')}
+function clearTimers(){clearInterval(countdownTimer);clearInterval(gameTimer)}
+function showCountdown(endAt){clearTimers();const update=()=>{const sec=Math.max(0,Math.ceil((endAt-Date.now())/1000));el.status.textContent=sec>0?`🟠 倒數中｜${sec} 秒`:'▶ 遊戲開始！';if(sec<=0)clearInterval(countdownTimer)};update();countdownTimer=setInterval(update,250)}
+function showGameRemaining(endAt,limited=true){clearTimers();if(!limited||!endAt){el.status.textContent='🟢 遊戲進行中｜不限時';return}const update=()=>{const sec=Math.max(0,Math.ceil((endAt-Date.now())/1000));el.status.textContent=`🟢 遊戲進行中｜剩餘 ${formatElapsed(sec)}`;if(sec<=0)clearInterval(gameTimer)};update();gameTimer=setInterval(update,250)}
+function applyRoomState(room){activeRoomData={...(activeRoomData||{}),...room};if(room.items)activeItems=room.items;el.playerCount.textContent=`👥 本局玩家：${room.playerCount??0} 人`;el.startBtn.disabled=room.phase!=='waiting';renderCurrent(room.currentNumber);if(room.phase==='waiting')el.status.textContent=room.scheduledAt?'🟡 等待中｜到預定時間自動開始':'🟡 等待中｜可按「開始遊戲」';else if(room.phase==='countdown'&&room.countdownEndsAt)showCountdown(room.countdownEndsAt);else if(room.phase==='playing')showGameRemaining(room.gameEndsAt,room.timeLimitEnabled!==false);else if(room.phase==='ended')el.status.textContent='🔴 已結束｜排行榜保留至房間刪除'}
+async function refreshRoom(){if(!activeRoom)return;const r=await fetch('/api/admin/room/'+encodeURIComponent(activeRoom));if(!r.ok)return;const d=await r.json();if(!d.success)return;applyRoomState(d.room);renderRanking(d.room.ranking||[])}
+async function startRoom(){if(!activeRoom||!confirm('確定現在開始倒數嗎？'))return;const r=await fetch('/api/admin/start-room/'+encodeURIComponent(activeRoom),{method:'POST'});const d=await r.json();if(!d.success)return alert('❌ '+d.message);applyRoomState(d.room)}
+async function endRoom(){if(!activeRoom||!confirm('確定要立即結束這場遊戲嗎？'))return;const r=await fetch('/api/admin/end-room/'+encodeURIComponent(activeRoom),{method:'POST'});const d=await r.json();if(!d.success)return alert('❌ '+d.message);await refreshRoom();alert('✅ 遊戲已結束')}
+async function deleteRoom(){if(!activeRoom||!confirm('確定要刪除房間？刪除後玩家會被退出，且無法復原。'))return;const old=activeRoom;const r=await fetch('/api/admin/room/'+encodeURIComponent(activeRoom),{method:'DELETE'});const d=await r.json();if(!d.success)return alert('❌ '+d.message);localStorage.removeItem(ACTIVE_KEY);activeRoom='';activeRoomData=null;activeItems=[];el.control.classList.add('hidden');setLocked(false);el.roomId.value='';await generateRoomId();alert('✅ 房間已刪除')}
+async function copyRank(){const rows=[...el.rankBody.querySelectorAll('tr')];if(!rows.length)return alert('目前還沒有排行榜資料');await copyText(rows.map(tr=>{const c=[...tr.children].map(td=>td.innerText.trim());return `排名${c[0]}｜${c[1]}｜點擊${c[2]}格｜${c[3]}｜${c[4]}`}).join('\n'),'已複製排行榜')}
+async function restoreRoom(){const rid=localStorage.getItem(ACTIVE_KEY);if(!rid){await generateRoomId();return}const r=await fetch('/api/admin/room/'+encodeURIComponent(rid));if(!r.ok){localStorage.removeItem(ACTIVE_KEY);await generateRoomId();return}const d=await r.json();if(!d.success){localStorage.removeItem(ACTIVE_KEY);await generateRoomId();return}activeRoom=rid;activeRoomData=d.room;activeItems=d.room.items||[];el.roomId.value=rid;el.showRoom.textContent=rid;el.control.classList.remove('hidden');setLocked(true);shareText=buildShareText(d.room);socket.emit('watchRoom',{roomId:rid});applyRoomState(d.room);renderRanking(d.room.ranking||[])}
+el.newRoomBtn.addEventListener('click',generateRoomId);el.createBtn.addEventListener('click',createRoom);el.startBtn.addEventListener('click',startRoom);$('endBtn').addEventListener('click',endRoom);$('deleteBtn').addEventListener('click',deleteRoom);$('copyUrlBtn').addEventListener('click',()=>copyText(playerUrl(),'已複製玩家連結'));$('copyShareBtn').addEventListener('click',()=>copyText(shareText||buildShareText(activeRoomData),'已複製分享文字'));$('copyRankBtn').addEventListener('click',copyRank);
+socket.on('roomState',d=>{activeItems=d.items||activeItems;applyRoomState(d);renderRanking(d.ranking||[])});
+
+socket.on('rankingUpdate',renderRanking);socket.on('countdownStarted',d=>showCountdown(d.countdownEndsAt));socket.on('gameStarted',d=>{if(activeRoomData){activeRoomData.phase='playing';activeRoomData.gameEndsAt=d.gameEndsAt;activeRoomData.timeLimitEnabled=d.timeLimitEnabled}showGameRemaining(d.gameEndsAt,d.timeLimitEnabled!==false)});socket.on('numberDrawn',d=>{if(activeRoomData){activeRoomData.currentNumber=d.number;activeRoomData.drawToken=d.token}renderCurrent(d.number)});socket.on('gameEnded',d=>{clearTimers();if(activeRoomData)activeRoomData.phase='ended';el.status.textContent='🔴 已結束｜排行榜保留至房間刪除';el.currentNumber.textContent='-';renderRanking(d.ranking||[]);el.startBtn.disabled=true});socket.on('roomDeleted',()=>{localStorage.removeItem(ACTIVE_KEY);location.reload()});socket.on('connect',()=>{if(activeRoom){socket.emit('watchRoom',{roomId:activeRoom})}});
+restoreRoom();
+</script>
+</body>
+</html>
