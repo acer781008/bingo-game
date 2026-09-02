@@ -80,6 +80,18 @@ function roomInfo(room) {
   };
 }
 
+function onlinePlayerCount(room) {
+  return [...room.players.values()].filter(p => p.socketId && io.sockets.sockets.has(p.socketId)).length;
+}
+
+function emitRoomState(room) {
+  io.to(room.id).emit("roomState", {
+    ...roomInfo(room),
+    ranking: ranking(room),
+    playerCount: onlinePlayerCount(room)
+  });
+}
+
 function ranking(room) {
   return [...room.players.values()]
     .sort((a, b) =>
@@ -386,7 +398,7 @@ app.get("/api/admin/room/:roomId", (req, res) => {
     success: true,
     room: {
       ...roomInfo(room),
-      playerCount: room.players.size,
+      playerCount: onlinePlayerCount(room),
       ranking: ranking(room)
     }
   });
@@ -435,7 +447,7 @@ io.on("connection", socket => {
     socket.emit("roomState", {
       ...roomInfo(room),
       ranking: ranking(room),
-      playerCount: room.players.size
+      playerCount: onlinePlayerCount(room)
     });
   });
 
@@ -487,6 +499,7 @@ io.on("connection", socket => {
     });
 
     emitRanking(room);
+    emitRoomState(room);
   });
 
   socket.on("addScore", ({ hitCount, bingoLines, token }) => {
@@ -529,7 +542,13 @@ io.on("connection", socket => {
     // 不刪除玩家資格。
     // index.html 跳到 game.html、重新整理、短暫斷線時，都能用 clientId 接回同一玩家。
     const room = rooms.get(socket.data.roomId);
-    if (room) emitRanking(room);
+    if (room) {
+      const player = room.players.get(socket.data.clientId);
+      // 舊連線斷開時不可把已重連的新 socket 誤判為離線。
+      if (player && player.socketId === socket.id) player.socketId = null;
+      emitRanking(room);
+      emitRoomState(room);
+    }
   });
 });
 
