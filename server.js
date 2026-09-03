@@ -60,6 +60,7 @@ function roomInfo(room) {
     roomId: room.id,
     version: room.version || "number",
     theme: room.theme || null,
+    playMode: room.playMode || "normal",
     items: room.items || null,
     size: room.size,
     phase: room.phase,
@@ -143,9 +144,9 @@ function drawNext(room) {
     return finishGame(room);
   }
 
-  const numberPoolMax = ({25:50, 36:60, 49:75, 64:90})[room.size] || room.size;
+  const numberPoolMax = room.playMode === "normal" ? room.size : (({25:50, 36:60, 49:75, 64:90})[room.size] || room.size);
   const pool = room.version === "picture"
-    ? MAHJONG_ITEMS.map(item => item.id)
+    ? (room.items || MAHJONG_ITEMS).map(item => item.id)
     : room.version === "farm"
       ? (room.items || FARM_ITEMS).map(item => item.id)
       : Array.from({length: numberPoolMax}, (_, i) => i + 1);
@@ -297,6 +298,7 @@ app.post("/api/admin/create-room", (req, res) => {
   const targetLines = Number(req.body.targetLines || 1);
   const version = ["number", "picture", "farm"].includes(req.body.version) ? req.body.version : "number";
   const theme = version === "picture" ? "mahjong" : version === "farm" ? "farm" : null;
+  const playMode = ["normal", "advanced"].includes(req.body.playMode) ? req.body.playMode : "normal";
 
   if (!roomId) return res.status(400).json({ success: false, message: "請輸入房間號碼" });
   if (rooms.has(roomId)) return res.status(400).json({ success: false, message: "房間號碼已存在" });
@@ -321,9 +323,17 @@ app.post("/api/admin/create-room", (req, res) => {
     id: roomId,
     version,
     theme,
-    items: version === "picture" ? MAHJONG_ITEMS.slice() : version === "farm" ? (() => {
+    playMode,
+    items: version === "picture" ? (() => {
+      const shuffled = MAHJONG_ITEMS.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return playMode === "normal" ? shuffled.slice(0, size) : MAHJONG_ITEMS.slice();
+    })() : version === "farm" ? (() => {
       // V21.11: 144 張只當總素材庫；每局依盤面抽出較小素材池，避免叫號過散。
-      const poolSize = ({25:45, 36:60, 49:75, 64:90})[size] || 45;
+      const poolSize = playMode === "normal" ? size : (({25:45, 36:60, 49:75, 64:90})[size] || 45);
       // V21.12: 避免同一局出現外觀重複的素材（來源素材中有少數同圖不同編號）。
       const duplicateGroups = [
         ["farm-046","farm-131"],
