@@ -324,3 +324,21 @@ body.admin-page #pictureOptions p{margin:3px 0 6px!important}
   #board[data-side="7"] .farm-tile-image{width:100%;height:100%;object-fit:contain;}
   #board[data-side="7"] .cell.hit::after{top:1px;right:2px;font-size:14px;}
 }
+
+
+/* ===== V21.15 玩家手機版面：標題縮小、盤面上移、7x7 圖示放大 ===== */
+body.player-page .top.player-title{display:flex;align-items:center;justify-content:center;padding:10px 14px}
+body.player-page .top.player-title h1{font-size:20px;line-height:1.15;text-align:center}
+@media(max-width:700px){
+  body.player-page .top.player-title{padding:8px 10px!important}
+  body.player-page .top.player-title h1{font-size:17px!important}
+  body.player-page .wrap{margin-top:4px!important;padding-left:2px!important;padding-right:2px!important}
+  body.player-page .current-call-card{margin-bottom:2px!important}
+  body.player-page .card:has(#board){padding:2px!important;margin-top:0!important}
+  #board[data-side="5"],#board[data-side="6"]{gap:2px!important}
+  #board[data-side="7"]{gap:1px!important}
+  #board[data-side="7"] .cell{border-width:1.5px!important;border-radius:6px!important;padding:0!important}
+  #board[data-side="7"] .farm-tile-image{width:112%!important;height:112%!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
+  #board[data-side="6"] .farm-tile-image{width:108%!important;height:108%!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
+  #board[data-side="5"] .farm-tile-image{width:106%!important;height:106%!important;max-width:none!important;max-height:none!important;object-fit:contain!important}
+}
