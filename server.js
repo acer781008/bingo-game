@@ -52,6 +52,7 @@ function clearRoomTimers(roomId) {
   clearTimeout(t.end);
   clearInterval(t.draw);
   clearTimeout(t.cleanup);
+  clearTimeout(t.rankFlush);
   timers.set(roomId, {});
 }
 
@@ -85,10 +86,11 @@ function onlinePlayerCount(room) {
   return [...room.players.values()].filter(p => p.socketId && io.sockets.sockets.has(p.socketId)).length;
 }
 
-function emitRoomState(room) {
-  io.to(room.id).emit("roomState", {
-    ...roomInfo(room),
-    ranking: ranking(room),
+function emitPlayerCount(room) {
+  // V21.17：玩家加入/離線時只廣播在線人數，不再把 items、drawn、ranking
+  // 等整包房間資料重送給所有玩家，避免多人同時進房造成瞬間流量尖峰。
+  io.to(room.id).emit("playerCountUpdate", {
+    roomId: room.id,
     playerCount: onlinePlayerCount(room)
   });
 }
@@ -110,8 +112,12 @@ function ranking(room) {
     }));
 }
 
-function emitRanking(room) {
-  io.to(room.id).emit("rankingUpdate", ranking(room));
+function emitRanking(room, immediate = false) {
+  // V21.17：多人同時點擊時合併短時間內的排行榜廣播，減少 Socket 風暴。
+  const t = getTimers(room.id);
+  const send = () => { t.rankFlush = null; io.to(room.id).emit("rankingUpdate", ranking(room)); };
+  if (immediate) { if (t.rankFlush) clearTimeout(t.rankFlush); send(); return; }
+  if (!t.rankFlush) t.rankFlush = setTimeout(send, 120);
 }
 
 function scheduleRoomCleanup(room) {
@@ -446,7 +452,7 @@ app.delete("/api/admin/room/:roomId", (req, res) => {
   res.json({ success: true });
 });
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), { maxAge: "7d", etag: true, immutable: false }));
 
 io.on("connection", socket => {
   socket.on("watchRoom", ({ roomId }) => {
@@ -509,7 +515,7 @@ io.on("connection", socket => {
     });
 
     emitRanking(room);
-    emitRoomState(room);
+    emitPlayerCount(room);
   });
 
   socket.on("addScore", ({ hitCount, bingoLines, token }) => {
@@ -557,7 +563,7 @@ io.on("connection", socket => {
       // 舊連線斷開時不可把已重連的新 socket 誤判為離線。
       if (player && player.socketId === socket.id) player.socketId = null;
       emitRanking(room);
-      emitRoomState(room);
+      emitPlayerCount(room);
     }
   });
 });
