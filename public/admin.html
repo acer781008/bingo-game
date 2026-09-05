@@ -24,7 +24,7 @@
 <div class="top"><h1>🌱 種菜賓果｜主控室</h1><button class="lobby-btn" onclick="goLobby()">🏠 返回遊戲大廳</button></div>
 <div class="wrap">
   <div class="card" id="settingsCard">
-    <div class="settings-title-row"><h2>🎮 遊戲設定 <small class="version-mark">V21.16 FARM</small></h2></div>
+    <div class="settings-title-row"><h2>🎮 遊戲設定 <small class="version-mark">V21.17.1 FARM</small></h2></div>
     <div class="settings-compact-grid">
       <div class="compact-field"><label>遊戲版本</label><select id="ver"><option value="farm" selected>🌱 種菜版</option><option value="number">🔢 數字版</option><option value="picture">🀄 麻將版</option></select></div>
       <div class="compact-field"><label>盤面格數</label><select id="size"><option value="25">5×5</option><option value="36">6×6</option><option value="49">7×7</option><option value="64">8×8</option></select></div>
@@ -62,6 +62,7 @@
 const socket=io(); const $=id=>document.getElementById(id);
 const el={ver:$('ver'),size:$('size'),playMode:$('playMode'),roomId:$('rid'),newRoomBtn:$('newRoomBtn'),scheduledAt:$('when'),timeMode:$('timeMode'),gameSeconds:$('game'),countdownSeconds:$('count'),drawIntervalMs:$('speed'),targetLines:$('targetLines'),roomNote:$('roomNote'),createBtn:$('createBtn'),control:$('ctl'),showRoom:$('show'),status:$('st'),currentNumber:$('num'),playerCount:$('playerCount'),startBtn:$('startBtn'),rankBody:$('rb'),modeHelp:$('modeHelp'),farmPreview:$('farmPreview')};
 let activeRoom=''; let activeRoomData=null; let activeItems=[]; let shareText=''; let countdownTimer=null; let gameTimer=null;
+const currentCallBox=document.querySelector('.live-current');
 const ACTIVE_KEY='bingoAdminActiveRoom';
 const preview=[1,8,17,32,55,76,101,144].map(n=>`farm-${String(n).padStart(3,'0')}.png`); el.farmPreview.innerHTML=preview.map(f=>`<img src="/farm/${f}" alt="${f}">`).join('');
 function goLobby(){location.href='https://game-lobby-eo8o.onrender.com/'}
@@ -75,7 +76,7 @@ function goalLabel(v=el.targetLines.value){return String(v)==='99'?'全盤':`${v
 function timeLabel(room){if(room.timeLimitEnabled===false)return '不限時';return `${formatElapsed(room.gameSeconds)}（限時）`}
 function itemSrc(item,version){return version==='farm'?`/farm/${item.file}`:`/mahjong/${item.file}`}
 function imageVersion(v){return v==='farm'||v==='picture'}
-function renderCurrent(value){if(!value){el.currentNumber.textContent='-';return}if(activeRoomData?.version==='farm'){el.currentNumber.textContent=String(value).replace(/^farm-/,'');return}if(activeRoomData?.version==='picture'){const item=activeItems.find(x=>String(x.id)===String(value));el.currentNumber.textContent=item?.name||item?.face||String(value);return}el.currentNumber.textContent=value}
+function renderCurrent(value){const isFarm=activeRoomData?.version==='farm';if(currentCallBox)currentCallBox.style.display=isFarm?'none':'';if(isFarm){el.currentNumber.textContent='-';return}if(!value){el.currentNumber.textContent='-';return}if(activeRoomData?.version==='picture'){const item=activeItems.find(x=>String(x.id)===String(value));el.currentNumber.textContent=item?.name||item?.face||String(value);return}el.currentNumber.textContent=value}
 function updateVersionUI(){const pic=el.ver.value==='picture';[...el.size.options].forEach(o=>o.disabled=pic&&!['25','36'].includes(o.value));if(pic&&!['25','36'].includes(el.size.value))el.size.value='25';const normal=el.playMode.value==='normal';const size=Number(el.size.value);const adv=({25:45,36:60,49:75,64:90})[size]||size;el.modeHelp.firstChild.textContent=el.ver.value==='farm'?(normal?`🌱 正常版：本局只使用 ${size} 張圖片；所有玩家圖片相同、排列不同。`:`🔥 進階版：144 張總素材庫，本局使用約 ${adv} 張素材池。`):el.ver.value==='picture'?(normal?`🀄 正常版：本局使用 ${size} 張麻將圖；玩家排列不同。`:'🀄 進階版：使用較大的麻將素材池。'):(normal?`🔢 正常版：${size} 格就使用 1～${size}；玩家排列不同。`:`🔢 進階版：盤面從較大的數字池隨機取得。`);el.farmPreview.style.display=el.ver.value==='farm'?'flex':'none'}
 function updateTimeMode(){el.gameSeconds.disabled=el.timeMode.value==='unlimited'}
 el.ver.addEventListener('change',updateVersionUI);el.size.addEventListener('change',updateVersionUI);el.playMode.addEventListener('change',updateVersionUI);el.timeMode.addEventListener('change',updateTimeMode);updateVersionUI();updateTimeMode();
